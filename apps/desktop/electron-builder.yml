@@ -1,0 +1,58 @@
+appId: com.nefroclinicas.m365console
+productName: Console M365
+copyright: Console M365
+
+# Declarado explicitamente porque o electron esta no node_modules hoisted da
+# raiz do monorepo, e o electron-builder so procura na pasta do app.
+electronVersion: 34.5.8
+
+directories:
+  output: ../../dist-desktop
+  buildResources: recursos
+
+# Sem asar: o engine do Prisma e um .node que precisaria ser desempacotado, e o
+# asarUnpack nao lida bem com dependencias de workspace (symlinks). Empacotar
+# solto e mais simples e o asar nao e barreira de seguranca de qualquer forma.
+asar: false
+
+files:
+  - dist/**
+  - package.json
+  # O client gerado do Prisma mora em node_modules/.prisma e nao aparece na
+  # arvore de dependencias, entao precisa ser copiado explicitamente.
+  - from: ../../node_modules/.prisma
+    to: node_modules/.prisma
+    filter: ['**/*']
+  # Nada de arquivos locais de desenvolvimento dentro do instalador.
+  - '!**/.env'
+  - '!**/.env.*'
+  - '!**/*.db'
+  - '!**/*.map'
+  - '!**/tsconfig*.json'
+
+# Arquivos que o app le em runtime e que nao fazem parte do bundle JS.
+extraResources:
+  - from: recursos/dados-template.db
+    to: dados-template.db
+  - from: ../web/dist
+    to: web
+
+win:
+  target:
+    # nsis = instalador com atalhos; portable = um .exe unico que roda direto.
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+portable:
+  artifactName: ConsoleM365-${version}-portatil.${ext}
+
+nsis:
+  artifactName: ConsoleM365-${version}-instalador.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Console M365

@@ -1,0 +1,24 @@
+{
+  "name": "@nefro/desktop",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Console de licencas Microsoft 365 - contas ociosas e custo mensal parado",
+  "author": "LCRESENDE00",
+  "comentario": "Sem \"type\": \"module\" de proposito: o processo principal do Electron roda em CommonJS, e a API (ESM) entra por import() dinamico.",
+  "main": "dist/main.js",
+  "scripts": {
+    "template": "node scripts/gerar-template.mjs",
+    "build": "tsc -p tsconfig.json && npm run template",
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "@nefro/api": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "electron": "34.5.8",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.3"
+  }
+}

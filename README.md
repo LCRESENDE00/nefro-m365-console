@@ -3,7 +3,8 @@
 Painel de **licenças Microsoft 365** para TI interna: mostra quem não acessa há meses, qual
 licença está sendo paga sem uso e **quanto isso custa por mês**.
 
-**▶ Demo ao vivo: https://lcresende00.github.io/nefro-m365-console/**
+**⬇ Baixar para Windows:** [versão portátil](https://github.com/LCRESENDE00/nefro-m365-console/releases/latest) (baixa e abre, sem instalar) ou [instalador](https://github.com/LCRESENDE00/nefro-m365-console/releases/latest)
+**▶ Demo no navegador: https://lcresende00.github.io/nefro-m365-console/**
 
 Nasceu de um protótipo em HTML de arquivo único. Aqui ele virou aplicação de verdade:
 React + TypeScript no front, API Express com Prisma e banco SQLite atrás.
@@ -24,6 +25,31 @@ React + TypeScript no front, API Express com Prisma e banco SQLite atrás.
 | **Armazenamento** | Ocupação do OneDrive por conta e por setor, GB presos em contas inativas |
 | **Relatórios** | Geração de CSV a partir do banco, preferências de envio automático e histórico de exportações |
 | **Configurações** | Conexão, permissões de leitura, limiares de conta ociosa/inativa, contas marcadas para revisão |
+
+---
+
+## Aplicativo de desktop (Windows)
+
+Duas formas de usar, ambas na [página de releases](https://github.com/LCRESENDE00/nefro-m365-console/releases/latest):
+
+| Arquivo | O que faz |
+| --- | --- |
+| `ConsoleM365-<versão>-portatil.exe` | Baixa, dá dois cliques e abre. Não instala nada. |
+| `ConsoleM365-<versão>-instalador.exe` | Instala com atalho no menu Iniciar e na área de trabalho. |
+
+Não precisa de Node, nem de banco, nem de configuração: o app carrega a API e o SQLite por dentro
+e **cria o banco já populado na primeira execução**, em `%APPDATA%\Console M365\dados.db`. Para
+recomeçar do zero, feche o app e apague essa pasta.
+
+O executável não é assinado digitalmente — o Windows SmartScreen vai mostrar um aviso na primeira
+vez. É só **Mais informações → Executar assim mesmo**. Assinar exigiria um certificado pago.
+
+Para gerar os executáveis a partir do código:
+
+```bash
+npm run desktop        # abre o app em modo de desenvolvimento
+npm run desktop:dist   # gera os .exe em dist-desktop/
+```
 
 ---
 

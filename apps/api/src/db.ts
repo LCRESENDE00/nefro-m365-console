@@ -4,7 +4,7 @@ import { isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 // Raiz de apps/api, valendo tanto para src/ (tsx) quanto para dist/ (build).
-const raizApi = resolve(fileURLToPath(new URL('.', import.meta.url)), '..')
+export const raizApi = resolve(fileURLToPath(new URL('.', import.meta.url)), '..')
 
 const arquivoEnv = join(raizApi, '.env')
 if (existsSync(arquivoEnv)) process.loadEnvFile(arquivoEnv)

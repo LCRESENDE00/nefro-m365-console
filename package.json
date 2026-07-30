@@ -6,7 +6,8 @@
   "workspaces": [
     "packages/dominio",
     "apps/api",
-    "apps/web"
+    "apps/web",
+    "apps/desktop"
   ],
   "scripts": {
     "setup": "npm install && npm run build:dominio && npm run db:push && npm run db:seed",
@@ -16,6 +17,8 @@
     "build:dominio": "npm run build -w packages/dominio",
     "build": "npm run build:dominio && npm run build -w apps/api && npm run build -w apps/web",
     "build:pages": "npm run build:dominio && npm run build:pages -w apps/web",
+    "desktop": "npm run build && npm run build -w apps/desktop && npm run start -w apps/desktop",
+    "desktop:dist": "npm run build && npm run build -w apps/desktop && npm run dist -w apps/desktop",
     "db:push": "npm run db:push -w apps/api",
     "db:seed": "npm run db:seed -w apps/api",
     "db:studio": "npm run db:studio -w apps/api"
@@ -31,6 +34,7 @@
     "@prisma/engines@6.19.3": true,
     "esbuild@0.28.1": true,
     "esbuild@0.25.12": true,
-    "prisma@6.19.3": true
+    "prisma@6.19.3": true,
+    "electron@34.5.8": true
   }
 }

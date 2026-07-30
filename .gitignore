@@ -11,3 +11,5 @@ apps/api/prisma/*.db
 Thumbs.db
 *.log
 .vite/
+dist-desktop/
+apps/desktop/recursos/*.db
