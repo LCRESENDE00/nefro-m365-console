@@ -7,6 +7,7 @@ import {
   IconeUsuarios,
   IconeVisaoGeral,
 } from '../components/icones'
+import { SEM_BACKEND } from '../data'
 import { useSessao } from '../features/login/sessao'
 import estilos from './Layout.module.css'
 
@@ -60,7 +61,11 @@ export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null })
       <div className={estilos.sideFoot}>
         <div className={estilos.row}>
           <span className="dot" />
-          {sessao?.modo === 'demo' ? 'Modo demo · banco local' : 'Conectado ao tenant'}
+          {SEM_BACKEND
+            ? 'Demo estática · sem backend'
+            : sessao?.modo === 'demo'
+              ? 'Modo demo · banco local'
+              : 'Conectado ao tenant'}
         </div>
         <div className={`${estilos.row} mono`} style={{ fontSize: 10.5, opacity: 0.65 }}>
           tenant {sessao?.tenantId.slice(0, 8) ?? '—'}…{sessao?.tenantId.slice(-4) ?? ''}

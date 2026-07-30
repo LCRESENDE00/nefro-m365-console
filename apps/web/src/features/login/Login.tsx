@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Erro } from '../../components/Estado'
 import { IconeMicrosoft } from '../../components/icones'
-import { metricasRepo } from '../../data'
+import { SEM_BACKEND, metricasRepo } from '../../data'
 import { money0 } from '../../lib/formato'
 import { useConsulta } from '../../lib/useConsulta'
 import { useSessao } from './sessao'
@@ -94,8 +94,9 @@ export function Login() {
         </button>
 
         <p className="muted" style={{ fontSize: 11.5, marginTop: 16 }}>
-          O modo demo lê o banco local semeado com dados fictícios da clínica. Nada é enviado para o
-          tenant.
+          {SEM_BACKEND
+            ? 'Demo pública com dados fictícios, rodando inteira no seu navegador. Qualquer valor nos campos acima serve — nada sai daqui.'
+            : 'O modo demo lê o banco local semeado com dados fictícios da clínica. Nada é enviado para o tenant.'}
         </p>
 
         {erro && (

@@ -2,10 +2,9 @@
  * Regras de negocio do console. Ficam so aqui: a UI consome o status ja
  * calculado, entao mudar um limiar nao exige tocar em nenhuma tela.
  */
+import type { StatusConta } from './tipos.js'
 
-export type StatusConta = 'ativo' | 'ocioso' | 'inativo' | 'nunca'
-
-export type Limiares = { limiarOcioso: number; limiarInativo: number }
+type Limiares = { limiarOcioso: number; limiarInativo: number }
 
 /**
  * Classifica a conta pelo tempo desde o ultimo acesso.

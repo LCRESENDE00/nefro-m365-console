@@ -1,11 +1,9 @@
+import { filtrarContas, type FiltroContas } from '@nefro/dominio'
 import { Router } from 'express'
-import { listarContas, serieDoUsuario } from '../consultas.js'
+import { listarContas, serieDeAcessos } from '../consultas.js'
 import { prisma } from '../db.js'
-import { contaOciosa } from '../dominio.js'
 
 export const rotasUsuarios = Router()
-
-type Ordenacao = 'nome' | 'dias' | 'gb'
 
 /**
  * GET /api/usuarios?q=&depto=&status=&sort=&dir=
@@ -13,34 +11,15 @@ type Ordenacao = 'nome' | 'dias' | 'gb'
  * da tabela mostra (total e custo ocioso da selecao atual).
  */
 rotasUsuarios.get('/', async (req, res) => {
-  const { q = '', depto = 'todos', status = 'todos' } = req.query as Record<string, string>
-  const sort = (req.query.sort as Ordenacao) ?? 'dias'
-  const dir = Number(req.query.dir ?? -1) < 0 ? -1 : 1
+  const filtro: FiltroContas = {
+    q: (req.query.q as string) ?? '',
+    depto: (req.query.depto as string) ?? 'todos',
+    status: (req.query.status as FiltroContas['status']) ?? 'todos',
+    sort: (req.query.sort as FiltroContas['sort']) ?? 'dias',
+    dir: Number(req.query.dir ?? -1) < 0 ? -1 : 1,
+  }
 
-  const todas = await listarContas()
-  const busca = q.trim().toLowerCase()
-
-  const contas = todas
-    .filter((c) => {
-      if (status !== 'todos' && c.status !== status) return false
-      if (depto !== 'todos' && c.depto !== depto) return false
-      if (busca && !`${c.nome}${c.upn}${c.cargo}`.toLowerCase().includes(busca)) return false
-      return true
-    })
-    .sort((a, b) => {
-      const valor = (c: (typeof todas)[number]) =>
-        sort === 'dias' ? (c.diasUltimoAcesso ?? 9999) : sort === 'gb' ? c.oneDriveGb : c.nome
-      const va = valor(a)
-      const vb = valor(b)
-      return (va > vb ? 1 : va < vb ? -1 : 0) * dir
-    })
-
-  res.json({
-    contas,
-    total: todas.length,
-    deptos: [...new Set(todas.map((c) => c.depto))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
-    custoSelecao: contas.filter((c) => contaOciosa(c.status)).reduce((soma, c) => soma + c.sku.preco, 0),
-  })
+  res.json(filtrarContas(await listarContas(), filtro))
 })
 
 /** GET /api/usuarios/:upn - detalhe da conta com a serie de acessos do drawer. */
@@ -49,7 +28,7 @@ rotasUsuarios.get('/:upn', async (req, res) => {
   const conta = contas.find((c) => c.upn === req.params.upn)
   if (!conta) return res.status(404).json({ erro: 'Conta não encontrada' })
 
-  res.json({ ...conta, serieAcessos: await serieDoUsuario(conta.id) })
+  res.json({ ...conta, serieAcessos: await serieDeAcessos(conta.id) })
 })
 
 /**

@@ -1,3 +1,5 @@
+import { SEM_BACKEND } from '../data'
+
 /** Placeholders de carregamento e erro usados por todas as telas. */
 
 export function Carregando({ texto = 'Consultando o banco…' }: { texto?: string }) {
@@ -15,7 +17,12 @@ export function Erro({ mensagem, aoTentarNovamente }: { mensagem: string; aoTent
         Não foi possível carregar os dados
       </div>
       <div className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-        {mensagem}. Confira se a API está no ar em <span className="mono">localhost:3333</span>.
+        {mensagem}
+        {SEM_BACKEND ? '.' : (
+          <>
+            . Confira se a API está no ar em <span className="mono">localhost:3333</span>.
+          </>
+        )}
       </div>
       {aoTentarNovamente && (
         <button className="btn" onClick={aoTentarNovamente}>

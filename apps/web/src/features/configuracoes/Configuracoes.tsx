@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Carregando, Erro } from '../../components/Estado'
 import { LinhaToggle } from '../../components/LinhaToggle'
 import { useToast } from '../../components/Toast'
-import { configuracoesRepo, type Configuracoes as Preferencias } from '../../data'
+import { SEM_BACKEND, configuracoesRepo, type Configuracoes as Preferencias } from '../../data'
 import { useSubtitulo } from '../../layout/pagina'
 import { useDados } from '../../lib/dados'
 import { useConsulta } from '../../lib/useConsulta'
@@ -179,12 +179,12 @@ export function Configuracoes() {
         </div>
         <div className="dl">
           <span>Base</span>
-          <b>React · TypeScript · Express · Prisma · SQLite</b>
+          <b>{SEM_BACKEND ? 'React · TypeScript (demo sem backend)' : 'React · TypeScript · Express · Prisma · SQLite'}</b>
         </div>
         <div className="dl">
-          <span>Banco local</span>
+          <span>Origem</span>
           <b className="mono" style={{ fontSize: 12 }}>
-            apps/api/prisma/dev.db
+            {SEM_BACKEND ? 'seed embutido + localStorage' : 'apps/api/prisma/dev.db'}
           </b>
         </div>
       </div>

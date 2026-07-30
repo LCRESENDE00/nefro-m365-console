@@ -1,26 +1,11 @@
-import { prisma, lerLimiares } from './db.js'
-import { statusConta, type StatusConta } from './dominio.js'
-
-export type Conta = {
-  id: number
-  nome: string
-  upn: string
-  cargo: string
-  depto: string
-  diasUltimoAcesso: number | null
-  mfa: boolean
-  oneDriveGb: number
-  arquivos: number
-  ehRecurso: boolean
-  status: StatusConta
-  sku: { codigo: string; nome: string; curto: string; preco: number; cor: string }
-}
+import { statusConta, type ContaCalculada } from '@nefro/dominio'
+import { lerLimiares, prisma } from './db.js'
 
 /**
  * Fonte unica das contas ja com o status calculado. Respeita a preferencia
  * "incluir contas de recurso" das Configuracoes.
  */
-export async function listarContas(): Promise<Conta[]> {
+export async function listarContas(): Promise<ContaCalculada[]> {
   const limiares = await lerLimiares()
   const usuarios = await prisma.usuario.findMany({
     include: { sku: true },
@@ -64,7 +49,7 @@ export async function serieDoTenant(): Promise<number[]> {
   return linhas.map((l) => l.valor)
 }
 
-export async function serieDoUsuario(usuarioId: number): Promise<number[]> {
+export async function serieDeAcessos(usuarioId: number): Promise<number[]> {
   const linhas = await prisma.acessoSemanal.findMany({
     where: { usuarioId },
     orderBy: { semana: 'asc' },

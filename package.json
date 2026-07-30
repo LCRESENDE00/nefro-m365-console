@@ -4,15 +4,18 @@
   "private": true,
   "description": "Console de licencas Microsoft 365 - identifica contas ociosas e o custo mensal parado",
   "workspaces": [
+    "packages/dominio",
     "apps/api",
     "apps/web"
   ],
   "scripts": {
-    "setup": "npm install && npm run db:push && npm run db:seed",
-    "dev": "concurrently -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
+    "setup": "npm install && npm run build:dominio && npm run db:push && npm run db:seed",
+    "dev": "npm run build:dominio && concurrently -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
-    "build": "npm run build -w apps/api && npm run build -w apps/web",
+    "build:dominio": "npm run build -w packages/dominio",
+    "build": "npm run build:dominio && npm run build -w apps/api && npm run build -w apps/web",
+    "build:pages": "npm run build:dominio && npm run build:pages -w apps/web",
     "db:push": "npm run db:push -w apps/api",
     "db:seed": "npm run db:seed -w apps/api",
     "db:studio": "npm run db:studio -w apps/api"
