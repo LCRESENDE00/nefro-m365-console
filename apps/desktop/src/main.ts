@@ -20,6 +20,8 @@ const caminhos = {
   web: app.isPackaged
     ? join(process.resourcesPath, 'web')
     : resolve(pastaDist, '..', '..', 'web', 'dist'),
+  /** Engine do Prisma: fica fora do asar, senao nao pode ser carregado. */
+  engine: join(process.resourcesPath, 'prisma', 'query_engine-windows.dll.node'),
 }
 
 /**
@@ -80,6 +82,13 @@ async function criarJanela(url: string) {
 async function iniciar() {
   const banco = prepararBanco()
   process.env.DATABASE_URL = `file:${banco}`
+
+  if (app.isPackaged) {
+    if (!existsSync(caminhos.engine)) {
+      throw new Error(`Engine do Prisma não encontrado em ${caminhos.engine}`)
+    }
+    process.env.PRISMA_QUERY_ENGINE_LIBRARY = caminhos.engine
+  }
 
   // Importado so agora: a API le DATABASE_URL no momento em que e carregada.
   const { iniciarApi } = await import('@nefro/api')

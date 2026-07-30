@@ -10,19 +10,26 @@ directories:
   output: ../../dist-desktop
   buildResources: recursos
 
-# Sem asar: o engine do Prisma e um .node que precisaria ser desempacotado, e o
-# asarUnpack nao lida bem com dependencias de workspace (symlinks). Empacotar
-# solto e mais simples e o asar nao e barreira de seguranca de qualquer forma.
-asar: false
+# Com asar o app vira um arquivo so. Isso importa no alvo portable: sem asar
+# ele espalha ~70 pacotes no %TEMP% a cada execucao, e a primeira rodada pode
+# comecar antes de a extracao terminar (visto na pratica: "Cannot find module").
+#
+# Nao da para usar asarUnpack aqui: ele exige que todo arquivo esteja sob a
+# pasta do app, e as dependencias de workspace (@nefro/api) sao symlinks para
+# fora dela. Por isso o engine do Prisma vai por extraResources e o caminho e
+# informado em runtime via PRISMA_QUERY_ENGINE_LIBRARY.
+asar: true
 
 files:
   - dist/**
   - package.json
   # O client gerado do Prisma mora em node_modules/.prisma e nao aparece na
   # arvore de dependencias, entao precisa ser copiado explicitamente.
+  # O binario do engine fica de fora daqui (vai em extraResources), senao seriam
+  # 20 MB duplicados dentro e fora do asar.
   - from: ../../node_modules/.prisma
     to: node_modules/.prisma
-    filter: ['**/*']
+    filter: ['**/*', '!**/*.node']
   # Nada de arquivos locais de desenvolvimento dentro do instalador.
   - '!**/.env'
   - '!**/.env.*'
@@ -36,6 +43,8 @@ extraResources:
     to: dados-template.db
   - from: ../web/dist
     to: web
+  - from: ../../node_modules/.prisma/client/query_engine-windows.dll.node
+    to: prisma/query_engine-windows.dll.node
 
 win:
   target:
