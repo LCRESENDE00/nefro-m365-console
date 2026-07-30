@@ -1,0 +1,77 @@
+// Console M365 - modelo de dados
+// SQLite no desenvolvimento. Para trocar por PostgreSQL basta mudar o provider
+// abaixo e a DATABASE_URL: nenhuma query do app depende do dialeto.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Plano de licenca contratado no tenant (SKU do Microsoft 365).
+model Sku {
+  codigo    String @id
+  nome      String
+  curto     String
+  preco     Float
+  comprados Int
+  cor       String
+  ordem     Int    @default(0)
+
+  usuarios Usuario[]
+}
+
+/// Conta licenciada do tenant. Contas de recurso (salas, caixas
+/// compartilhadas) tem ehRecurso = true e nunca registram acesso.
+model Usuario {
+  id               Int      @id @default(autoincrement())
+  nome             String
+  upn              String   @unique
+  cargo            String
+  depto            String
+  skuCodigo        String
+  diasUltimoAcesso Int?
+  mfa              Boolean  @default(false)
+  oneDriveGb       Float    @default(0)
+  arquivos         Int      @default(0)
+  ehRecurso        Boolean  @default(false)
+  criadoEm         DateTime @default(now())
+
+  sku     Sku             @relation(fields: [skuCodigo], references: [codigo])
+  acessos AcessoSemanal[]
+
+  @@index([depto])
+  @@index([skuCodigo])
+}
+
+/// Serie historica de acessos. usuarioId nulo = serie agregada do tenant.
+model AcessoSemanal {
+  id        Int  @id @default(autoincrement())
+  semana    Int
+  valor     Int
+  usuarioId Int?
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, semana])
+}
+
+/// Registro de cada relatorio gerado pela tela de Relatorios.
+model Exportacao {
+  id        Int      @id @default(autoincrement())
+  arquivo   String
+  geradoPor String
+  linhas    Int
+  criadoEm  DateTime @default(now())
+
+  @@index([criadoEm])
+}
+
+/// Preferencias do console (limiares, toggles de envio automatico).
+model Configuracao {
+  chave String @id
+  valor String
+}
