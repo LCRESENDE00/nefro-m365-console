@@ -24,21 +24,44 @@ export function filtrarContas(todas: ContaCalculada[], filtro: FiltroContas): Pa
     .filter((c) => {
       if (filtro.status !== 'todos' && c.status !== filtro.status) return false
       if (filtro.depto !== 'todos' && c.depto !== filtro.depto) return false
+      if (filtro.unidade !== 'todos' && c.unidade !== filtro.unidade) return false
+      if (filtro.tipoLicenca !== 'todos' && c.tipoLicenca !== filtro.tipoLicenca) return false
+      if (filtro.classificacao !== 'todos' && c.classificacao !== filtro.classificacao) return false
+      if (filtro.regime !== 'todos' && c.regime !== filtro.regime) return false
+      if (filtro.produto !== 'todos' && c.produto !== filtro.produto) return false
       if (busca && !`${c.nome}${c.upn}${c.cargo}`.toLowerCase().includes(busca)) return false
       return true
     })
     .sort((a, b) => {
-      const valor = (c: ContaCalculada) =>
-        filtro.sort === 'dias' ? (c.diasUltimoAcesso ?? 9999) : filtro.sort === 'gb' ? c.oneDriveGb : c.nome
+      const valor = (c: ContaCalculada) => {
+        switch (filtro.sort) {
+          case 'dias':
+            return c.diasUltimoAcesso ?? 9999
+          case 'gb':
+            return c.oneDriveGb
+          case 'valor':
+            return c.valorTotal
+          // Sem data marcada vai para o fim da ordem crescente.
+          case 'renovacao':
+            return c.dataRenovacao ?? '9999-12-31'
+          default:
+            return c.nome
+        }
+      }
       const va = valor(a)
       const vb = valor(b)
       return (va > vb ? 1 : va < vb ? -1 : 0) * filtro.dir
     })
 
+  const listaOrdenada = (extrair: (c: ContaCalculada) => string) =>
+    [...new Set(todas.map(extrair))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+
   return {
     contas,
     total: todas.length,
-    deptos: [...new Set(todas.map((c) => c.depto))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    deptos: listaOrdenada((c) => c.depto),
+    unidades: listaOrdenada((c) => c.unidade),
+    produtos: listaOrdenada((c) => c.produto),
     custoSelecao: contas.filter((c) => contaOciosa(c.status)).reduce((soma, c) => soma + c.sku.preco, 0),
   }
 }

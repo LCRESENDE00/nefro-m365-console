@@ -1,6 +1,7 @@
 /** Implementacao HTTP dos repositorios, falando com a API Express local. */
 import type {
   ArmazenamentoRepository,
+  CatalogoRepository,
   ConfiguracaoRepository,
   ContaRepository,
   LicencaRepository,
@@ -9,6 +10,7 @@ import type {
 } from '../repositorios'
 import type {
   CatalogoRelatorios,
+  Catalogos,
   Configuracoes,
   ContaDetalhada,
   PaginaContas,
@@ -18,20 +20,40 @@ import type {
 } from '../tipos'
 import { baixarArquivo, enviarJson, montarQuery, pegarJson } from './cliente'
 
+const caminhoConta = (upn: string) => `/usuarios/${encodeURIComponent(upn)}`
+
 export const contasHttp: ContaRepository = {
   listar: (filtro) =>
     pegarJson<PaginaContas>(
       `/usuarios${montarQuery({
         q: filtro.q,
         depto: filtro.depto,
+        unidade: filtro.unidade,
+        tipoLicenca: filtro.tipoLicenca,
+        classificacao: filtro.classificacao,
+        regime: filtro.regime,
+        produto: filtro.produto,
         status: filtro.status,
         sort: filtro.sort,
         dir: filtro.dir,
       })}`,
     ),
-  buscarPorUpn: (upn) => pegarJson<ContaDetalhada>(`/usuarios/${encodeURIComponent(upn)}`),
-  alternarRevisao: (upn) =>
-    enviarJson<{ marcada: boolean }>(`/usuarios/${encodeURIComponent(upn)}/revisao`, 'POST'),
+  buscarPorUpn: (upn) => pegarJson<ContaDetalhada>(caminhoConta(upn)),
+  criar: (cadastro) => enviarJson<{ upn: string }>('/usuarios', 'POST', cadastro),
+  atualizar: async (upn, mudancas) => {
+    await enviarJson(caminhoConta(upn), 'PATCH', mudancas)
+  },
+  redefinirSenha: (upn) => enviarJson<{ senha: string }>(`${caminhoConta(upn)}/senha`, 'POST'),
+  alternarSituacao: (upn) =>
+    enviarJson<{ habilitada: boolean }>(`${caminhoConta(upn)}/situacao`, 'POST'),
+  alternarRevisao: (upn) => enviarJson<{ marcada: boolean }>(`${caminhoConta(upn)}/revisao`, 'POST'),
+}
+
+export const catalogosHttp: CatalogoRepository = {
+  ler: () => pegarJson<Catalogos>('/catalogos'),
+  incluir: (tipo, valor) => enviarJson<Catalogos>('/catalogos', 'POST', { tipo, valor }),
+  remover: (tipo, valor) =>
+    enviarJson<Catalogos>(`/catalogos/${tipo}/${encodeURIComponent(valor)}`, 'DELETE'),
 }
 
 export const metricasHttp: MetricasRepository = {

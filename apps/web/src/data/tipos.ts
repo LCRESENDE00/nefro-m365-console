@@ -6,6 +6,9 @@
 import type { ContaCalculada } from '@nefro/dominio'
 
 export type {
+  Cadastro,
+  Catalogos,
+  ClassificacaoConta,
   ContaCalculada as Conta,
   FatiaDesperdicio,
   FiltroContas,
@@ -13,9 +16,13 @@ export type {
   LicencaResumida as Licenca,
   PaginaContas,
   Plano,
+  RegimeConta,
   ResumoArmazenamento,
   ResumoLicencas,
   StatusConta,
+  TipoCatalogo,
+  TipoContrato,
+  TipoLicenca,
   VisaoGeral,
 } from '@nefro/dominio'
 

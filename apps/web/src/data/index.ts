@@ -7,6 +7,7 @@
  */
 import {
   armazenamentoEstatico,
+  catalogosEstatico,
   configuracoesEstatico,
   contasEstatico,
   licencasEstatico,
@@ -15,6 +16,7 @@ import {
 } from './estatico'
 import {
   armazenamentoHttp,
+  catalogosHttp,
   configuracoesHttp,
   contasHttp,
   licencasHttp,
@@ -31,6 +33,7 @@ export const licencasRepo = SEM_BACKEND ? licencasEstatico : licencasHttp
 export const armazenamentoRepo = SEM_BACKEND ? armazenamentoEstatico : armazenamentoHttp
 export const relatoriosRepo = SEM_BACKEND ? relatoriosEstatico : relatoriosHttp
 export const configuracoesRepo = SEM_BACKEND ? configuracoesEstatico : configuracoesHttp
+export const catalogosRepo = SEM_BACKEND ? catalogosEstatico : catalogosHttp
 
 export * from './tipos'
 export * from './repositorios'

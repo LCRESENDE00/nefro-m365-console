@@ -66,8 +66,76 @@
   overflow: hidden;
 }
 
+/* A tabela tem mais colunas do que cabe em telas estreitas: rola só ela. */
+.rolagem {
+  overflow-x: auto;
+}
+
+.rolagem table {
+  min-width: 1180px;
+}
+
 .tableCard tbody tr {
   cursor: pointer;
+}
+
+/* botoes de acao da ultima coluna */
+.acoes {
+  display: flex;
+  gap: 4px;
+}
+
+.acoes button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  transition: 0.15s;
+}
+
+.acoes button:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.acoes button.perigo:hover {
+  background: var(--rose-soft);
+  border-color: rgba(242, 101, 122, 0.35);
+  color: var(--rose);
+}
+
+/* senha temporaria recem-gerada */
+.senha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--accent-soft);
+  border: 1px solid rgba(91, 140, 255, 0.35);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.senha > div {
+  flex: 1;
+  min-width: 220px;
+}
+
+.senha b {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.senha .mono {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  color: var(--text);
 }
 
 .tableCard tbody tr:hover {

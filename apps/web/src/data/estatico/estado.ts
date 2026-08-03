@@ -1,5 +1,12 @@
-import { CONFIGURACOES_PADRAO, EXPORTACOES_INICIAIS } from '@nefro/dominio'
-import type { Exportacao } from '../tipos'
+import {
+  CNPJS,
+  CONFIGURACOES_PADRAO,
+  EXPORTACOES_INICIAIS,
+  SETORES,
+  UNIDADES,
+  type UsuarioSeed,
+} from '@nefro/dominio'
+import type { Catalogos, Exportacao } from '../tipos'
 
 /**
  * Estado mutavel da demo estatica.
@@ -15,6 +22,9 @@ export type EstadoDemo = {
   preferencias: Record<string, string>
   historico: Exportacao[]
   marcadas: string[]
+  /** `null` enquanto ninguem criou nem editou conta: vale o seed original. */
+  contas: UsuarioSeed[] | null
+  catalogos: Catalogos
 }
 
 function estadoInicial(): EstadoDemo {
@@ -22,6 +32,8 @@ function estadoInicial(): EstadoDemo {
     preferencias: Object.fromEntries(CONFIGURACOES_PADRAO.map((c) => [c.chave, c.valor])),
     historico: EXPORTACOES_INICIAIS.map((e, i) => ({ id: i + 1, ...e })),
     marcadas: [],
+    contas: null,
+    catalogos: { setores: [...SETORES], unidades: [...UNIDADES], cnpjs: [...CNPJS] },
   }
 }
 
@@ -38,6 +50,8 @@ function carregar(): EstadoDemo {
       preferencias: { ...base.preferencias, ...(salvo.preferencias ?? {}) },
       historico: salvo.historico ?? base.historico,
       marcadas: salvo.marcadas ?? base.marcadas,
+      contas: salvo.contas ?? base.contas,
+      catalogos: salvo.catalogos ?? base.catalogos,
     }
   } catch {
     return base

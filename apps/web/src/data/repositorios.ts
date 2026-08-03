@@ -6,20 +6,37 @@
  * cache local, mock de teste) nao encosta em nenhum componente.
  */
 import type {
+  Cadastro,
   CatalogoRelatorios,
+  Catalogos,
   Configuracoes,
   ContaDetalhada,
   FiltroContas,
   PaginaContas,
   ResumoArmazenamento,
   ResumoLicencas,
+  TipoCatalogo,
   VisaoGeral,
 } from './tipos'
 
 export interface ContaRepository {
   listar(filtro: FiltroContas): Promise<PaginaContas>
   buscarPorUpn(upn: string): Promise<ContaDetalhada>
+  criar(cadastro: Cadastro): Promise<{ upn: string }>
+  /** O UPN identifica a conta e nao muda: as mudancas cobrem o resto. */
+  atualizar(upn: string, mudancas: Partial<Cadastro>): Promise<void>
+  /** Devolve a senha temporaria uma unica vez; ela nao fica guardada. */
+  redefinirSenha(upn: string): Promise<{ senha: string }>
+  /** Inativa a conta, ou reativa se ja estiver inativa. */
+  alternarSituacao(upn: string): Promise<{ habilitada: boolean }>
   alternarRevisao(upn: string): Promise<{ marcada: boolean }>
+}
+
+/** Listas padronizadas (setores, unidades, CNPJs) mantidas na Administracao. */
+export interface CatalogoRepository {
+  ler(): Promise<Catalogos>
+  incluir(tipo: TipoCatalogo, valor: string): Promise<Catalogos>
+  remover(tipo: TipoCatalogo, valor: string): Promise<Catalogos>
 }
 
 export interface MetricasRepository {

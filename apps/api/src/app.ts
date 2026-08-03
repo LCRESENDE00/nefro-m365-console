@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { prisma, raizApi } from './db.js'
 import { rotasArmazenamento } from './rotas/armazenamento.js'
+import { rotasCatalogos } from './rotas/catalogos.js'
 import { rotasConfiguracoes } from './rotas/configuracoes.js'
 import { rotasLicencas } from './rotas/licencas.js'
 import { rotasMetricas } from './rotas/metricas.js'
@@ -34,6 +35,7 @@ export function criarApp({ pastaEstatica }: OpcoesApp = {}) {
   app.use('/api/armazenamento', rotasArmazenamento)
   app.use('/api/relatorios', rotasRelatorios)
   app.use('/api/configuracoes', rotasConfiguracoes)
+  app.use('/api/catalogos', rotasCatalogos)
 
   // Front buildado: usado pelo app de desktop, que carrega tudo do mesmo host.
   const pasta = pastaEstatica ?? join(raizApi, '..', 'web', 'dist')

@@ -75,8 +75,8 @@ export function Configuracoes() {
             <h3>Permissões concedidas</h3>
           </div>
           <p className="muted" style={{ fontSize: 12.8, margin: '0 0 6px' }}>
-            O app usa apenas permissões de leitura. Nenhuma conta pode ser criada ou alterada por
-            aqui.
+            Além da leitura, o app cria e edita contas, redefine senha e inativa usuários. As listas
+            padronizadas ficam em Administração.
           </p>
           {dados.permissoes.map((permissao) => (
             <div className={estilos.perm} key={permissao}>

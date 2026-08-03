@@ -32,6 +32,8 @@ model Usuario {
   upn              String   @unique
   cargo            String
   depto            String
+  unidade          String   @default("")
+  cnpj             String   @default("")
   skuCodigo        String
   diasUltimoAcesso Int?
   mfa              Boolean  @default(false)
@@ -40,11 +42,34 @@ model Usuario {
   ehRecurso        Boolean  @default(false)
   criadoEm         DateTime @default(now())
 
+  /// accountEnabled do Graph: false = conta inativada pela tela de Usuarios.
+  habilitada       Boolean  @default(true)
+  classificacao    String   @default("individual")
+  regime           String   @default("politica")
+  tipoLicenca      String   @default("principal")
+  produto          String   @default("")
+  tipoContrato     String   @default("mensal")
+  /// `YYYY-MM-DD`. String porque e data sem hora: nao sofre fuso horario.
+  dataRenovacao    String?
+  valorTotal       Float    @default(0)
+  senhaRedefinidaEm DateTime?
+
   sku     Sku             @relation(fields: [skuCodigo], references: [codigo])
   acessos AcessoSemanal[]
 
   @@index([depto])
+  @@index([unidade])
   @@index([skuCodigo])
+}
+
+/// Listas padronizadas da area administrativa: setores, unidades e CNPJs.
+model Catalogo {
+  id    Int    @id @default(autoincrement())
+  tipo  String
+  valor String
+
+  @@unique([tipo, valor])
+  @@index([tipo])
 }
 
 /// Serie historica de acessos. usuarioId nulo = serie agregada do tenant.

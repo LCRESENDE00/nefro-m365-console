@@ -1,8 +1,11 @@
 import {
+  CNPJS,
   CONFIGURACOES_PADRAO,
   EXPORTACOES_INICIAIS,
   SERIE_TENANT,
+  SETORES,
   SKUS,
+  UNIDADES,
   USUARIOS,
   serieDoUsuario,
 } from '@nefro/dominio'
@@ -22,8 +25,16 @@ export async function semear(prisma: PrismaClient) {
   await prisma.sku.deleteMany()
   await prisma.exportacao.deleteMany()
   await prisma.configuracao.deleteMany()
+  await prisma.catalogo.deleteMany()
 
   await prisma.sku.createMany({ data: SKUS })
+  await prisma.catalogo.createMany({
+    data: [
+      ...SETORES.map((valor) => ({ tipo: 'setor', valor })),
+      ...UNIDADES.map((valor) => ({ tipo: 'unidade', valor })),
+      ...CNPJS.map((valor) => ({ tipo: 'cnpj', valor })),
+    ],
+  })
 
   for (const usuario of USUARIOS) {
     await prisma.usuario.create({

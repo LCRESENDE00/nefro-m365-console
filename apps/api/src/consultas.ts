@@ -1,4 +1,11 @@
-import { statusConta, type ContaCalculada } from '@nefro/dominio'
+import {
+  statusConta,
+  type ClassificacaoConta,
+  type ContaCalculada,
+  type RegimeConta,
+  type TipoContrato,
+  type TipoLicenca,
+} from '@nefro/dominio'
 import { lerLimiares, prisma } from './db.js'
 
 /**
@@ -20,11 +27,22 @@ export async function listarContas(): Promise<ContaCalculada[]> {
       upn: u.upn,
       cargo: u.cargo,
       depto: u.depto,
+      unidade: u.unidade,
+      cnpj: u.cnpj,
       diasUltimoAcesso: u.diasUltimoAcesso,
       mfa: u.mfa,
       oneDriveGb: u.oneDriveGb,
       arquivos: u.arquivos,
       ehRecurso: u.ehRecurso,
+      habilitada: u.habilitada,
+      // O banco guarda texto livre; o dominio define o conjunto valido na escrita.
+      classificacao: u.classificacao as ClassificacaoConta,
+      regime: u.regime as RegimeConta,
+      tipoLicenca: u.tipoLicenca as TipoLicenca,
+      produto: u.produto,
+      tipoContrato: u.tipoContrato as TipoContrato,
+      dataRenovacao: u.dataRenovacao,
+      valorTotal: u.valorTotal,
       status: statusConta(u.diasUltimoAcesso, limiares),
       sku: {
         codigo: u.sku.codigo,

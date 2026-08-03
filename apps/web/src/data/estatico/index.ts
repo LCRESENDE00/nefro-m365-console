@@ -15,14 +15,18 @@ import {
   filtrarContas,
   paraCsv,
   planilhaSelecao,
+  senhaTemporaria,
   serieDoUsuario,
   statusConta,
+  validarCadastro,
   type ContaCalculada,
   type Planilha,
+  type UsuarioSeed,
 } from '@nefro/dominio'
 import type {
   ArmazenamentoRepository,
   ArquivoGerado,
+  CatalogoRepository,
   ConfiguracaoRepository,
   ContaRepository,
   LicencaRepository,
@@ -32,14 +36,31 @@ import type {
 import { atualizarEstado, lerEstado, limiares } from './estado'
 
 const PERMISSOES = [
-  'User.Read.All',
-  'Directory.Read.All',
+  'User.ReadWrite.All',
+  'Directory.ReadWrite.All',
+  'UserAuthenticationMethod.ReadWrite.All',
   'Organization.Read.All',
   'Reports.Read.All',
   'AuditLog.Read.All',
 ]
 
 const SKU_POR_CODIGO = new Map(SKUS.map((sku) => [sku.codigo, sku]))
+
+/** Cadastro vigente: o seed original, ou o que a demo ja alterou no navegador. */
+function cadastros(): UsuarioSeed[] {
+  return lerEstado().contas ?? USUARIOS
+}
+
+/** Grava a lista inteira: sem backend, e o jeito mais simples de nao perder edicao. */
+function gravarCadastros(lista: UsuarioSeed[]) {
+  atualizarEstado({ contas: lista })
+}
+
+function acharCadastro(upn: string): UsuarioSeed {
+  const conta = cadastros().find((c) => c.upn === upn)
+  if (!conta) throw new Error('Conta não encontrada')
+  return conta
+}
 
 /**
  * Mesmo papel de `listarContas()` na API: seed + status resolvido.
@@ -52,7 +73,8 @@ const SKU_POR_CODIGO = new Map(SKUS.map((sku) => [sku.codigo, sku]))
 function contas(): ContaCalculada[] {
   const atual = limiares()
 
-  return USUARIOS.map((u, indice) => ({ ...u, id: indice + 1 }))
+  return cadastros()
+    .map((u, indice) => ({ ...u, id: indice + 1 }))
     .filter((u) => atual.incluirRecursos || !u.ehRecurso)
     .sort((a, b) => (a.nome > b.nome ? 1 : a.nome < b.nome ? -1 : 0))
     .map((u) => {
@@ -63,11 +85,21 @@ function contas(): ContaCalculada[] {
         upn: u.upn,
         cargo: u.cargo,
         depto: u.depto,
+        unidade: u.unidade,
+        cnpj: u.cnpj,
         diasUltimoAcesso: u.diasUltimoAcesso,
         mfa: u.mfa,
         oneDriveGb: u.oneDriveGb,
         arquivos: u.arquivos,
         ehRecurso: u.ehRecurso,
+        habilitada: u.habilitada,
+        classificacao: u.classificacao,
+        regime: u.regime,
+        tipoLicenca: u.tipoLicenca,
+        produto: u.produto,
+        tipoContrato: u.tipoContrato,
+        dataRenovacao: u.dataRenovacao,
+        valorTotal: u.valorTotal,
         status: statusConta(u.diasUltimoAcesso, atual),
         sku: { codigo: sku.codigo, nome: sku.nome, curto: sku.curto, preco: sku.preco, cor: sku.cor },
       }
@@ -109,6 +141,58 @@ export const contasEstatico: ContaRepository = {
     const conta = contas().find((c) => c.upn === upn)
     if (!conta) throw new Error('Conta não encontrada')
     return { ...conta, serieAcessos: serieDoUsuario(conta.diasUltimoAcesso) }
+  },
+
+  async criar(cadastro) {
+    const invalido = validarCadastro(cadastro)
+    if (invalido) throw new Error(invalido)
+
+    const lista = cadastros()
+    if (lista.some((c) => c.upn === cadastro.upn)) {
+      throw new Error('Já existe uma conta com esse e-mail')
+    }
+    const sku = SKU_POR_CODIGO.get(cadastro.skuCodigo)
+    if (!sku) throw new Error('Tipo de licença desconhecido')
+
+    gravarCadastros([
+      ...lista,
+      {
+        ...cadastro,
+        // Conta recem-criada ainda nao registrou login.
+        diasUltimoAcesso: null,
+        oneDriveGb: 0,
+        arquivos: 0,
+        habilitada: true,
+        valorTotal: cadastro.valorTotal || sku.preco,
+      },
+    ])
+
+    return { upn: cadastro.upn }
+  },
+
+  async atualizar(upn, mudancas) {
+    const invalido = validarCadastro(mudancas, true)
+    if (invalido) throw new Error(invalido)
+
+    acharCadastro(upn)
+    if (mudancas.skuCodigo && !SKU_POR_CODIGO.has(mudancas.skuCodigo)) {
+      throw new Error('Tipo de licença desconhecido')
+    }
+
+    gravarCadastros(
+      cadastros().map((c) => (c.upn === upn ? { ...c, ...mudancas, upn: c.upn } : c)),
+    )
+  },
+
+  async redefinirSenha(upn) {
+    acharCadastro(upn)
+    return { senha: senhaTemporaria() }
+  },
+
+  async alternarSituacao(upn) {
+    const habilitada = !acharCadastro(upn).habilitada
+    gravarCadastros(cadastros().map((c) => (c.upn === upn ? { ...c, habilitada } : c)))
+    return { habilitada }
   },
 
   async alternarRevisao(upn) {
@@ -161,6 +245,46 @@ export const relatoriosEstatico: RelatorioRepository = {
 
   async exportarSelecao(upns) {
     return gerarCsv('usuarios-filtrados', planilhaSelecao(contas().filter((c) => upns.includes(c.upn))))
+  },
+}
+
+const LISTA_DO_TIPO = { setor: 'setores', unidade: 'unidades', cnpj: 'cnpjs' } as const
+
+export const catalogosEstatico: CatalogoRepository = {
+  async ler() {
+    return lerEstado().catalogos
+  },
+
+  async incluir(tipo, valor) {
+    const texto = valor.trim()
+    if (!texto) throw new Error('Informe o valor a incluir')
+
+    const { catalogos } = lerEstado()
+    const lista = LISTA_DO_TIPO[tipo]
+    if (catalogos[lista].includes(texto)) throw new Error('Esse valor já está na lista')
+
+    const novos = {
+      ...catalogos,
+      [lista]: [...catalogos[lista], texto].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    }
+    atualizarEstado({ catalogos: novos })
+    return novos
+  },
+
+  async remover(tipo, valor) {
+    const campo = tipo === 'setor' ? 'depto' : tipo === 'unidade' ? 'unidade' : 'cnpj'
+    const emUso = cadastros().filter((c) => c[campo] === valor).length
+    if (emUso > 0) {
+      throw new Error(
+        `${emUso} ${emUso === 1 ? 'conta usa' : 'contas usam'} esse valor. Altere os cadastros antes de remover.`,
+      )
+    }
+
+    const { catalogos } = lerEstado()
+    const lista = LISTA_DO_TIPO[tipo]
+    const novos = { ...catalogos, [lista]: catalogos[lista].filter((v) => v !== valor) }
+    atualizarEstado({ catalogos: novos })
+    return novos
   },
 }
 

@@ -1,4 +1,11 @@
 /** Definicao das planilhas exportaveis, usada pela API e pela demo estatica. */
+import {
+  dataBr,
+  rotuloClassificacao,
+  rotuloRegime,
+  rotuloTipoContrato,
+  rotuloTipoLicenca,
+} from './cadastro.js'
 import type { SkuSeed } from './dados.js'
 import { quando } from './dominio.js'
 import type { ContaCalculada, Planilha, StatusConta } from './tipos.js'
@@ -93,18 +100,45 @@ export const RELATORIOS: Record<string, DefinicaoRelatorio> = {
 /** Exporta exatamente a selecao visivel na tela de Usuarios. */
 export function planilhaSelecao(contas: ContaCalculada[]): Planilha {
   return {
-    cabecalho: ['Nome', 'Conta', 'Cargo', 'Setor', 'Licença', 'Último acesso', 'MFA', 'OneDrive (GB)', 'Status', 'Custo mensal (R$)'],
+    cabecalho: [
+      'Nome',
+      'Conta',
+      'Cargo',
+      'Unidade',
+      'Setor',
+      'CNPJ',
+      'Licença',
+      'Tipo de licença',
+      'Produto contratado',
+      'Classificação',
+      'Regime',
+      'Último acesso',
+      'MFA',
+      'OneDrive (GB)',
+      'Status',
+      'Tipo de contrato',
+      'Renovação',
+      'Valor total (R$)',
+    ],
     linhas: contas.map((c) => [
       c.nome,
       c.upn,
       c.cargo,
+      c.unidade,
       c.depto,
+      c.cnpj,
       c.sku.curto,
+      rotuloTipoLicenca(c.tipoLicenca),
+      c.produto,
+      rotuloClassificacao(c.classificacao),
+      rotuloRegime(c.regime),
       quando(c.diasUltimoAcesso),
       c.ehRecurso ? '—' : c.mfa ? 'configurado' : 'PENDENTE',
       numero(c.oneDriveGb),
-      ROTULO_STATUS[c.status],
-      numero(c.sku.preco),
+      c.habilitada ? ROTULO_STATUS[c.status] : 'Inativada',
+      rotuloTipoContrato(c.tipoContrato),
+      dataBr(c.dataRenovacao),
+      numero(c.valorTotal),
     ]),
   }
 }

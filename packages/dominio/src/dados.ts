@@ -7,6 +7,13 @@
  * inventados e nao correspondem a pessoas ou contas reais.
  */
 
+import type {
+  ClassificacaoConta,
+  RegimeConta,
+  TipoContrato,
+  TipoLicenca,
+} from './tipos.js'
+
 export const DOMINIO_EMAIL = 'nefroclinicas.exemplo'
 
 export type SkuSeed = {
@@ -26,18 +33,67 @@ export const SKUS: SkuSeed[] = [
   { codigo: 'teams', nome: 'Teams Essentials', curto: 'Teams Essentials', preco: 22.5, comprados: 6, cor: '#B784F0', ordem: 4 },
 ]
 
+/** Unidades da rede e o CNPJ de cada uma, como a area administrativa comeca. */
+export const UNIDADES = [
+  'Matriz — Vila Mariana',
+  'Unidade Santo Amaro',
+  'Unidade Osasco',
+  'Unidade Guarulhos',
+]
+
+export const CNPJS = [
+  '12.345.678/0001-90',
+  '12.345.678/0002-71',
+  '12.345.678/0003-52',
+  '12.345.678/0004-33',
+]
+
+export const SETORES = [
+  'Administrativo',
+  'Diretoria',
+  'Enfermagem',
+  'Faturamento',
+  'Farmácia',
+  'Infraestrutura',
+  'Laboratório',
+  'Manutenção',
+  'Nefrologia',
+  'Nutrição',
+  'Psicologia',
+  'RH',
+  'Recepção',
+  'Serviço Social',
+  'TI',
+]
+
 export type UsuarioSeed = {
   nome: string
   upn: string
   cargo: string
   depto: string
+  unidade: string
+  cnpj: string
   skuCodigo: string
   diasUltimoAcesso: number | null
   mfa: boolean
   oneDriveGb: number
   arquivos: number
   ehRecurso: boolean
+  habilitada: boolean
+  classificacao: ClassificacaoConta
+  regime: RegimeConta
+  tipoLicenca: TipoLicenca
+  produto: string
+  tipoContrato: TipoContrato
+  dataRenovacao: string | null
+  valorTotal: number
 }
+
+/** Base do seed: so o que descreve a pessoa. O resto o `enriquecer` deriva. */
+type ContaBase = Pick<
+  UsuarioSeed,
+  'nome' | 'upn' | 'cargo' | 'depto' | 'skuCodigo' | 'diasUltimoAcesso' | 'mfa' | 'oneDriveGb' | 'arquivos' | 'ehRecurso'
+>
 
 const u = (
   nome: string,
@@ -49,7 +105,7 @@ const u = (
   mfa: boolean,
   oneDriveGb: number,
   arquivos: number,
-): UsuarioSeed => ({
+): ContaBase => ({
   nome,
   upn: `${local}@${DOMINIO_EMAIL}`,
   cargo,
@@ -63,7 +119,7 @@ const u = (
   ehRecurso: diasUltimoAcesso === null,
 })
 
-export const USUARIOS: UsuarioSeed[] = [
+const CONTAS_BASE: ContaBase[] = [
   u('Ana Beatriz Moraes', 'ana.moraes', 'Nefrologista', 'Nefrologia', 'bizprem', 1, true, 12.4, 890),
   u('Carlos Eduardo Lima', 'carlos.lima', 'Diretor Clínico', 'Diretoria', 'bizprem', 0, true, 28.9, 1640),
   u('Mariana Castro', 'mariana.castro', 'Enfermeira Chefe', 'Enfermagem', 'bizprem', 2, true, 7.8, 512),
@@ -103,6 +159,60 @@ export const USUARIOS: UsuarioSeed[] = [
   u('Sala Reunião 1', 'sala.reuniao1', 'Recurso', 'Infraestrutura', 'teams', null, false, 0, 0),
   u('Recepção Geral', 'recepcao.geral', 'Caixa compartilhada', 'Recepção', 'exo1', null, false, 0, 0),
 ]
+
+const PRODUTO_POR_SKU: Record<string, string> = {
+  bizprem: 'Microsoft 365 Premium',
+  bizstd: 'Microsoft 365 Standard',
+  exo1: 'Microsoft 365 Basic',
+  teams: 'Teams Essentials',
+}
+
+const PRECO_POR_SKU = new Map(SKUS.map((sku) => [sku.codigo, sku.preco]))
+
+/** Vinculos que a politica de licenciamento nao cobre. */
+const FORA_DA_POLITICA = ['Consultor', 'Estagiári', 'Ex-colaborador']
+
+const PRECO_COMPLEMENTO = 61.9
+
+/**
+ * Completa cada conta do seed com os dados comerciais.
+ *
+ * Tudo derivado da posicao no array, sem sorteio: a demo estatica e o banco
+ * semeado precisam produzir exatamente os mesmos valores.
+ */
+function enriquecer(base: ContaBase, indice: number): UsuarioSeed {
+  const complementar = indice % 7 === 3
+  const tipoLicenca: TipoLicenca = base.ehRecurso
+    ? 'gratuita'
+    : complementar
+      ? 'complementar'
+      : indice % 11 === 5
+        ? 'trial'
+        : 'principal'
+
+  const tipoContrato: TipoContrato = indice % 3 === 0 ? 'anual' : 'mensal'
+  const preco = PRECO_POR_SKU.get(base.skuCodigo) ?? 0
+
+  return {
+    ...base,
+    unidade: UNIDADES[indice % UNIDADES.length],
+    cnpj: CNPJS[indice % CNPJS.length],
+    habilitada: true,
+    classificacao: base.ehRecurso ? 'coletiva' : 'individual',
+    regime:
+      base.ehRecurso || FORA_DA_POLITICA.some((termo) => base.cargo.includes(termo))
+        ? 'excecao'
+        : 'politica',
+    tipoLicenca,
+    produto: complementar ? 'Power BI Pro' : (PRODUTO_POR_SKU[base.skuCodigo] ?? 'Microsoft 365 Basic'),
+    tipoContrato,
+    // Mensal renova no ciclo seguinte; anual so no ano que vem.
+    dataRenovacao: `${tipoContrato === 'anual' ? 2027 : 2026}-${String((indice % 12) + 1).padStart(2, '0')}-05`,
+    valorTotal: Number((preco + (complementar ? PRECO_COMPLEMENTO : 0)).toFixed(2)),
+  }
+}
+
+export const USUARIOS: UsuarioSeed[] = CONTAS_BASE.map(enriquecer)
 
 /** Serie agregada do tenant: usuarios com acesso semanal nas ultimas 20 semanas. */
 export const SERIE_TENANT = [26, 25, 27, 24, 26, 23, 25, 22, 24, 21, 23, 20, 22, 21, 19, 20, 18, 19, 17, 18]

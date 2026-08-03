@@ -16,8 +16,9 @@ const CHAVES_EDITAVEIS = [
 ]
 
 const PERMISSOES = [
-  'User.Read.All',
-  'Directory.Read.All',
+  'User.ReadWrite.All',
+  'Directory.ReadWrite.All',
+  'UserAuthenticationMethod.ReadWrite.All',
   'Organization.Read.All',
   'Reports.Read.All',
   'AuditLog.Read.All',
