@@ -9,13 +9,18 @@ import { useSessao } from './sessao'
 import estilos from './Login.module.css'
 
 export function Login() {
-  const { entrar } = useSessao()
+  const { entrar, entrarComMicrosoft } = useSessao()
   const navegar = useNavigate()
   const { dados, erro, recarregar } = useConsulta(() => metricasRepo.visaoGeral())
   const [tenantId, setTenantId] = useState('00000000-0000-4000-8000-000000000001')
   const [clientId, setClientId] = useState('00000000-0000-4000-8000-000000000002')
 
   function acessar(modo: 'microsoft' | 'demo') {
+if (modo === 'microsoft' && !SEM_BACKEND) {
+    entrarComMicrosoft()
+        return
+}
+    
     entrar({ tenantId, clientId, modo })
     navegar('/visao-geral')
   }
