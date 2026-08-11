@@ -41,6 +41,40 @@ Configuradas em: Registros de aplicativo > [seu app] > Permissoes de API >
 `User.Read.All` e `Reports.Read.All`. Depois de adicionar, um administrador
 do tenant precisa clicar em "Conceder consentimento do administrador".
 
+## Variaveis do front (SPA) - login real no navegador
+
+A tela "Licencas (real)" do front (`apps/web`) faz login direto no
+navegador com MSAL.js, sem passar pela API. Ela usa duas variaveis
+diferentes, documentadas em `apps/web/.env.example`:
+
+### VITE_MSAL_CLIENT_ID
+ID do aplicativo (client) do app registration, na plataforma "SPA"
+(pode ser o mesmo app registration acima, adicionando essa plataforma).
+Encontrado em: Registros de aplicativo > [seu app] > Visao geral >
+"ID do aplicativo (cliente)".
+
+### VITE_MSAL_TENANT_ID
+ID do tenant (locatario) do Azure AD.
+Encontrado em: Microsoft Entra ID > Visao geral > "ID do locatario".
+
+Essas duas nao sao segredos (ficam visiveis no bundle publico do front),
+mas ainda assim vem de variavel de ambiente porque sao especificas do
+tenant/app registration de cada instalacao.
+
+No GitHub Pages, o build roda pelo GitHub Actions (nao tem `.env` local),
+entao essas variaveis precisam ser cadastradas em Settings > Secrets and
+variables > Actions > aba "Variables" do repositorio, com esses mesmos
+nomes. O workflow `.github/workflows/pages.yml` ja esta configurado para
+ler dali e injetar no build.
+
+Tambem e necessario, no app registration, adicionar uma plataforma "SPA"
+(Autenticacao > Adicionar uma plataforma > Aplicativo de pagina unica) com
+o URI de redirecionamento da demo, ex:
+`https://lcresende00.github.io/nefro-m365-console/login`, e conceder
+consentimento do administrador para a permissao `Organization.Read.All`
+do Microsoft Graph (Permissoes de API).
+
+
 ## Resumo
 
 | Variavel | Onde achar |
@@ -50,3 +84,5 @@ do tenant precisa clicar em "Conceder consentimento do administrador".
 | AZURE_CLIENT_SECRET | Registros de aplicativo > Certificados e segredos |
 | AZURE_REDIRECT_URI | Registros de aplicativo > Autenticacao |
 | GRAPH_SCOPES | Registros de aplicativo > Permissoes de API |
+| VITE_MSAL_CLIENT_ID | Registros de aplicativo > Visao geral |
+| VITE_MSAL_TENANT_ID | Entra ID > Visao geral |
