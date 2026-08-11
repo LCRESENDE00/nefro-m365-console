@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Carregando, Erro } from '../../components/Estado'
-import { IconeBusca, IconeChave, IconeInativar, IconeNovaConta } from '../../components/icones'
+import { IconeBusca, IconeChave, IconeInativar, IconeLixeira, IconeNovaConta } from '../../components/icones'
 import { useToast } from '../../components/Toast'
 import { useSubtitulo } from '../../layout/pagina'
 import { diasParaStatus, useDadosReais, type StatusReal } from '../../lib/dadosReais'
@@ -38,6 +38,7 @@ const NOVA_CONTA_INICIAL: EstadoNovaConta = {
 
 type AcaoSenha = { usuario: UsuarioReal; executando: boolean; erro: string | null; senha: string | null }
 type AcaoSituacao = { usuario: UsuarioReal; habilitarPara: boolean; executando: boolean; erro: string | null }
+type AcaoLicencas = { usuario: UsuarioReal; executando: boolean; erro: string | null; removidas: boolean }
 
 const OVERLAY: CSSProperties = {
   position: 'fixed',
@@ -55,9 +56,13 @@ export function Usuarios() {
   const toast = useToast()
   const [busca, setBusca] = useState('')
   const [status, setStatus] = useState<StatusReal | 'todos'>('todos')
+ const [unidade, setUnidade] = useState('todas')
+ const [tipoLicenca, setTipoLicenca] = useState('todas')
+ const [tipoConta, setTipoConta] = useState('todas')
   const [novaConta, setNovaConta] = useState<EstadoNovaConta>(NOVA_CONTA_INICIAL)
   const [acaoSenha, setAcaoSenha] = useState<AcaoSenha | null>(null)
   const [acaoSituacao, setAcaoSituacao] = useState<AcaoSituacao | null>(null)
+ const [acaoLicencas, setAcaoLicencas] = useState<AcaoLicencas | null>(null)
 
   const usuarios = dr.usuarios
 
@@ -67,9 +72,15 @@ export function Usuarios() {
     return usuarios
       .filter((u) => !termo || u.nome.toLowerCase().includes(termo) || u.upn.toLowerCase().includes(termo))
       .filter((u) => status === 'todos' || diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) === status)
+ .filter((u) => unidade === 'todas' || (u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida') === unidade)
+ .filter((u) => tipoLicenca === 'todas' || u.skuIds.some((id) => dr.nomesPorSkuId.get(id) === tipoLicenca))
+ .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : !u.externo))
       .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
-  }, [usuarios, busca, status, dr.limiarOcioso, dr.limiarInativo])
+  }, [usuarios, busca, status, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId])
 
+ 
+ const unidadesDisponiveis = useMemo(() => [...new Set((usuarios ?? []).map((u) => (u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida')))].sort(), [usuarios])
+ const licencasDisponiveis = useMemo(() => [...new Set((usuarios ?? []).flatMap((u) => u.skuIds.map((id) => dr.nomesPorSkuId.get(id) ?? id)))].sort(), [usuarios, dr.nomesPorSkuId])
   useSubtitulo(usuarios ? `${usuarios.length} contas · ${filtrados?.length ?? 0} nesta seleção` : 'Conectando com a Microsoft…')
 
   async function confirmarCriacao() {
@@ -112,7 +123,18 @@ export function Usuarios() {
     } catch (e: any) {
       setAcaoSituacao((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : 'Não foi possível alterar a conta.' } : a))
     }
-  }
+      }
+async function confirmarRemocaoLicencas() {
+if (!acaoLicencas) return
+setAcaoLicencas((a) => (a ? { ...a, executando: true, erro: null } : a))
+try {
+await dr.removerLicencas(acaoLicencas.usuario.id, acaoLicencas.usuario.skuIds)
+toast("Todas as licenças de " + acaoLicencas.usuario.nome + " foram removidas")
+setAcaoLicencas((a) => (a ? { ...a, executando: false, removidas: true } : a))
+} catch (e: any) {
+setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : "Não foi possível remover as licenças." } : a))
+}
+}
 
   if (dr.erroConexao) return <Erro mensagem={dr.erroConexao} aoTentarNovamente={dr.conectar} />
   if (dr.conectando || !usuarios) {
@@ -142,6 +164,21 @@ export function Usuarios() {
           ))}
         </div>
       </div>
+<div className={estilos.toolbar}>
+<select className="input" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
+<option value="todas">Todas as unidades</option>
+{unidadesDisponiveis.map((un) => (<option key={un} value={un}>{un}</option>))}
+</select>
+<select className="input" value={tipoLicenca} onChange={(e) => setTipoLicenca(e.target.value)}>
+<option value="todas">Todos os tipos de licença</option>
+{licencasDisponiveis.map((l) => (<option key={l} value={l}>{l}</option>))}
+</select>
+<select className="input" value={tipoConta} onChange={(e) => setTipoConta(e.target.value)}>
+<option value="todas">Internos e externos</option>
+<option value="interno">Somente internos</option>
+<option value="externo">Somente externos (convidados)</option>
+</select>
+</div>
 
       {novaConta.aberto && (
         <section className="card" style={{ marginBottom: 16, padding: 16 }}>
@@ -310,6 +347,9 @@ export function Usuarios() {
                             >
                               <IconeInativar />
                             </button>
+<button title="Remover licenças" aria-label={"Remover licenças de " + u.nome} disabled={u.skuIds.length === 0} onClick={() => setAcaoLicencas({ usuario: u, executando: false, erro: null, removidas: false })}>
+<IconeLixeira />
+</button>
                           </div>
                         </td>
                       </tr>
@@ -383,6 +423,30 @@ export function Usuarios() {
           </div>
         </div>
       )}
+{acaoLicencas && (
+<div style={OVERLAY} onClick={() => !acaoLicencas.executando && setAcaoLicencas(null)}>
+<div className="card" style={{ padding: 20, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+<h3>Remover licenças de {acaoLicencas.usuario.nome}</h3>
+{acaoLicencas.removidas ? (
+<>
+<p style={{ marginTop: 10, color: "var(--verde, #4ade80)" }}>Todas as licenças foram removidas com sucesso.</p>
+<button className="btn" style={{ marginTop: 8 }} onClick={() => setAcaoLicencas(null)}>Fechar</button>
+</>
+) : (
+<>
+<p className="muted" style={{ fontSize: 13, marginTop: 8 }}>Isso remove de verdade TODAS as licenças de <b>{acaoLicencas.usuario.upn}</b> no Microsoft 365, inclusive as gratuitas: <b>{dr.nomesLicencasDoUsuario(acaoLicencas.usuario)}</b>.</p>
+{acaoLicencas.erro && <p style={{ color: "var(--rose)" }}>{acaoLicencas.erro}</p>}
+<div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+<button className="btn btn-primary" onClick={confirmarRemocaoLicencas} disabled={acaoLicencas.executando}>
+{acaoLicencas.executando ? "Removendo..." : "Sim, remover todas agora"}
+</button>
+<button className="btn" onClick={() => setAcaoLicencas(null)} disabled={acaoLicencas.executando}>Cancelar</button>
+</div>
+</>
+)}
+</div>
+</div>
+)}
     </>
   )
 }

@@ -24,16 +24,18 @@ export function Licencas() {
 
   useSubtitulo(
     dr.licencas.length
-      ? `${dr.licencas.length} planos · ${dr.licencas.reduce((s, p) => s + p.comprados, 0)} assentos contratados`
+      ? `${dr.licencas.length} planos · ${dr.licencas.filter((p) => !p.provavelAutosservico).reduce((s, p) => s + p.comprados, 0)} licenças contratadas`
       : 'Conectando com a Microsoft…',
   )
 
   if (dr.erroConexao) return <Erro mensagem={dr.erroConexao} aoTentarNovamente={dr.conectar} />
   if (dr.conectando && dr.licencas.length === 0) return <Carregando texto="Lendo licenças do Microsoft 365…" />
 
-  const totalComprados = dr.licencas.reduce((s, p) => s + p.comprados, 0)
-  const totalEmUso = dr.licencas.reduce((s, p) => s + p.emUso, 0)
-  const totalLivres = dr.licencas.reduce((s, p) => s + p.livres, 0)
+  const licencasPagas = dr.licencas.filter((p) => !p.provavelAutosservico)
+ const totalComprados = licencasPagas.reduce((s, p) => s + p.comprados, 0)
+  const totalEmUso = licencasPagas.reduce((s, p) => s + p.emUso, 0)
+  const totalLivres = licencasPagas.reduce((s, p) => s + p.livres, 0)
+ const licencasAutosservico = dr.licencas.filter((p) => p.provavelAutosservico)
 
   function exportarPlanilha() {
     const linhas: (string | number)[][] = []
@@ -67,9 +69,9 @@ export function Licencas() {
 
       <div className="grid g3" style={{ marginBottom: 16 }}>
         <div className="card kpi">
-          <div className="label">Assentos contratados</div>
+          <div className="label">Licenças contratadas</div>
           <div className="v">{totalComprados}</div>
-          <div className="d">em {dr.licencas.length} planos</div>
+        <div className="d">em {licencasPagas.length} planos pagos (de {dr.licencas.length} no total)</div>
         </div>
         <div className="card kpi">
           <div className="label">Em uso</div>
@@ -92,13 +94,13 @@ export function Licencas() {
               <div>
                 <h4>{sku.nome}</h4>
                 <span className="muted" style={{ fontSize: 12.3 }}>
-                  {sku.skuPartNumber}
+                {sku.skuPartNumber} {sku.provavelAutosservico && <b style={{ color: 'var(--amber)' }}> · gratuita/autoatribuída</b>}
                 </span>
               </div>
               <div className={estilos.price}>
                 <b>{sku.comprados}</b>
                 <div className="muted" style={{ fontSize: 11.5 }}>
-                  assentos
+                  licenças
                 </div>
               </div>
             </div>
@@ -125,6 +127,7 @@ export function Licencas() {
           </div>
         ))}
       </div>
+    <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>{licencasAutosservico.length > 0 ? licencasAutosservico.length + ' licença(s) gratuita(s)/autoatribuída(s) (testes e planos viral) foram excluídas dos totais acima porque a Microsoft libera uma cota enorme de vagas para elas, o que distorceria os números. ' : ''}O Microsoft Graph não informa o valor pago por licença — não dá pra trazer custo aqui sem acesso ao faturamento do Microsoft 365, que não está liberado com as permissões atuais.</p>
     </>
   )
 }

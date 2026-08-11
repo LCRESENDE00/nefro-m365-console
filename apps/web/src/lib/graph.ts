@@ -136,6 +136,7 @@ export type LicencaReal = {
   comprados: number
   emUso: number
   livres: number
+ provavelAutosservico: boolean
 }
 
 export async function lerLicencas(): Promise<LicencaReal[]> {
@@ -151,6 +152,7 @@ export async function lerLicencas(): Promise<LicencaReal[]> {
       comprados,
       emUso,
       livres: comprados - emUso,
+ provavelAutosservico: comprados >= 5000,
     }
   })
 }
@@ -161,13 +163,16 @@ export type UsuarioReal = {
   upn: string
   habilitada: boolean
   diasUltimoAcesso: number | null
+ ultimoAcessoIso: string | null
   skuIds: string[]
   totalLicencas: number
+ departamento: string | null
+ externo: boolean
 }
 
 export async function lerUsuarios(): Promise<UsuarioReal[]> {
   const resposta = await chamarGraph(
-    '/users?$select=id,displayName,userPrincipalName,accountEnabled,signInActivity,assignedLicenses&$top=999',
+    '/users?$select=id,displayName,userPrincipalName,accountEnabled,signInActivity,assignedLicenses,department,userType&$top=999',
   )
   const dados = await resposta.json()
   const agora = Date.now()
@@ -181,8 +186,11 @@ export async function lerUsuarios(): Promise<UsuarioReal[]> {
       upn: u.userPrincipalName,
       habilitada: !!u.accountEnabled,
       diasUltimoAcesso: dias,
+ ultimoAcessoIso: ultimo,
       skuIds,
       totalLicencas: skuIds.length,
+ departamento: u.department ?? null,
+ externo: u.userType === 'Guest',
     }
   })
 }
@@ -318,4 +326,11 @@ export async function redefinirSenha(id: string, novaSenha: string): Promise<voi
 /** Ativa ou desativa uma conta real (PATCH /users/{id} accountEnabled). Reversivel, mas grava no tenant de verdade. */
 export async function definirHabilitada(id: string, habilitada: boolean): Promise<void> {
   await chamarGraphEscrita('/users/' + id, 'PATCH', { accountEnabled: habilitada })
+}
+
+export async function removerTodasLicencas(id: string, skuIds: string[]): Promise<void> {
+await chamarGraphEscrita('/users/' + id + '/assignLicense', 'POST', {
+addLicenses: [],
+removeLicenses: skuIds,
+})
 }

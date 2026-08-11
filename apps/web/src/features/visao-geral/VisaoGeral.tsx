@@ -1,14 +1,23 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
 import { useSubtitulo } from '../../layout/pagina'
 import { diasParaStatus, useDadosReais } from '../../lib/dadosReais'
 import { BADGE, iniciais, quando } from '../../lib/formato'
 
+function nomeTitulo(nome: string): string {
+ return nome.toLowerCase().split(' ').map((p: string) => (p.length ? p[0].toUpperCase() + p.slice(1) : p)).join(' ')
+}
+function dataCurta(iso: string | null): string {
+ if (!iso) return 'Nunca acessou'
+return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
 export function VisaoGeral() {
   const navegar = useNavigate()
   const dr = useDadosReais()
   const usuarios = dr.usuarios
+ const [unidadesAbertas, setUnidadesAbertas] = useState(new Set())
+ const [verTodasUnidades, setVerTodasUnidades] = useState(false)
 
   const licenciados = useMemo(() => (usuarios ? usuarios.filter((u) => u.totalLicencas > 0) : null), [usuarios])
 
@@ -22,15 +31,31 @@ export function VisaoGeral() {
 
   const semMfa = licenciados ? licenciados.filter((u) => dr.mapaMfa.get(u.upn.toLowerCase()) === false).length : null
 
-  const revisao = useMemo(() => {
-    if (!licenciados) return []
-    return [...licenciados]
-      .filter((u) => diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) !== 'ativo')
-      .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
-      .slice(0, 8)
-  }, [licenciados, dr.limiarOcioso, dr.limiarInativo])
 
-  useSubtitulo(
+  const revisaoPorUnidade = useMemo(() => {
+ if (!licenciados) return []
+ const pendentes = licenciados.filter((u) => diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) !== 'ativo')
+const grupos = new Map()
+ for (const u of pendentes) {
+ const chave = u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida'
+if (!grupos.has(chave)) grupos.set(chave, [])
+ grupos.get(chave).push(u)
+ }
+return [...grupos.entries()]
+ .map(([unidade, contas]) => ({ unidade, contas: [...contas].sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999)) }))
+ .sort((a, b) => b.contas.length - a.contas.length)
+}, [licenciados, dr.limiarOcioso, dr.limiarInativo])
+ const totalPendentes = useMemo(() => revisaoPorUnidade.reduce((soma, g) => soma + g.contas.length, 0), [revisaoPorUnidade])
+const unidadesExibidas = verTodasUnidades ? revisaoPorUnidade : revisaoPorUnidade.slice(0, 5)
+ function alternarUnidade(unidade: string) {
+setUnidadesAbertas((prev) => {
+ const novo = new Set(prev)
+ if (novo.has(unidade)) novo.delete(unidade)
+else novo.add(unidade)
+ return novo
+ })
+ }
+useSubtitulo(
     licenciados
       ? `Sem acesso há mais de ${dr.limiarInativo} dias conta como inativa · ${licenciados.length} contas licenciadas`
       : 'Conectando com a Microsoft…',
@@ -100,30 +125,50 @@ export function VisaoGeral() {
         <div className="card">
           <div className="card-h">
             <h3>Precisam de revisão</h3>
+ <span className="muted" style={{ fontSize: 12, marginLeft: 'auto', marginRight: 10 }} title={totalPendentes + ' conta(s) ao todo'}>{totalPendentes} no total</span>
             <button className="act" onClick={() => navegar('/usuarios')}>
               Ver todos
             </button>
           </div>
-          {revisao.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13 }}>
-              Nenhuma conta ociosa ou inativa nesta janela.
-            </p>
-          ) : (
-            revisao.map((u) => (
-              <div key={u.upn} className="srow" style={{ cursor: 'pointer' }} onClick={() => navegar('/usuarios')}>
-                <div className="person" style={{ flex: 1, minWidth: 0 }}>
-                  <div className="av">{iniciais(u.nome)}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <b>{u.nome}</b>
-                    <span>{u.upn}</span>
-                  </div>
-                </div>
-                <span className={`badge ${BADGE[diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo)].classe}`}>
-                  {quando(u.diasUltimoAcesso)}
-                </span>
-              </div>
-            ))
-          )}
+{unidadesExibidas.length === 0 ? (
+<p className="muted" style={{ fontSize: 13 }}>
+Nenhuma conta ociosa ou inativa nesta janela.
+</p>
+) : (
+<>
+{unidadesExibidas.map((g) => {
+const aberta = unidadesAbertas.has(g.unidade)
+return (
+<div key={g.unidade} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+<div onClick={() => alternarUnidade(g.unidade)} title={g.contas.length + " conta(s) em " + g.unidade} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 2px", cursor: "pointer" }}>
+<span>{aberta ? "▾" : "▸"} <b>{g.unidade}</b></span>
+<span className="badge b-neutral">{g.contas.length}</span>
+</div>
+{aberta && g.contas.map((u) => (
+<div key={u.upn} className="srow" style={{ cursor: "pointer" }} onClick={() => navegar("/usuarios")}>
+<div className="person" style={{ flex: 1, minWidth: 0 }}>
+<div className="av">{iniciais(nomeTitulo(u.nome))}</div>
+<div style={{ minWidth: 0 }}>
+<b>{nomeTitulo(u.nome)}</b>
+<span>{u.upn}</span>
+</div>
+</div>
+<div style={{ textAlign: "right" }}>
+<span className={`badge ${BADGE[diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo)].classe}`}>{quando(u.diasUltimoAcesso)}</span>
+<div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{dataCurta(u.ultimoAcessoIso)}</div>
+</div>
+</div>
+))}
+</div>
+)
+})}
+{revisaoPorUnidade.length > 5 && (
+<button className="btn" style={{ marginTop: 10 }} onClick={() => setVerTodasUnidades((v) => !v)}>
+{verTodasUnidades ? "Ver menos unidades" : "Ver todas as unidades (" + revisaoPorUnidade.length + ")"}
+</button>
+)}
+</>
+)}
         </div>
       </div>
 

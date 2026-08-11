@@ -9,6 +9,7 @@ import {
   lerRegistroMfa,
   lerUsuarios,
   redefinirSenha as redefinirSenhaGraph,
+ removerTodasLicencas as removerTodasLicencasGraph,
   type ContaArmazenamento,
   type LicencaReal,
   type NovoUsuario,
@@ -52,6 +53,7 @@ type Contexto = Estado & {
   criarUsuario: (dados: NovoUsuario) => Promise<{ id: string }>
   redefinirSenha: (id: string) => Promise<string>
   alternarSituacao: (id: string, habilitarPara: boolean) => Promise<void>
+ removerLicencas: (id: string, skuIds: string[]) => Promise<void>
 }
 
 const ESTADO_INICIAL: Estado = {
@@ -149,7 +151,15 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
     [recarregarUsuarios],
   )
 
-  const nomesPorSkuId = useMemo(() => new Map(estado.licencas.map((l) => [l.skuId, l.nome])), [estado.licencas])
+  const removerLicencas = useCallback(
+ async (id: string, skuIds: string[]) => {
+ await removerTodasLicencasGraph(id, skuIds)
+ await recarregarUsuarios()
+ },
+ [recarregarUsuarios],
+ )
+
+ const nomesPorSkuId = useMemo(() => new Map(estado.licencas.map((l) => [l.skuId, l.nome])), [estado.licencas])
 
   const mapaMfa = useMemo(
     () => new Map((estado.mfa ?? []).map((m) => [m.upn.toLowerCase(), m.mfaRegistrado])),
@@ -179,6 +189,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
       criarUsuario,
       redefinirSenha,
       alternarSituacao,
+ removerLicencas,
     }),
     [
       estado,
@@ -192,6 +203,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
       criarUsuario,
       redefinirSenha,
       alternarSituacao,
+ removerLicencas,
     ],
   )
 
