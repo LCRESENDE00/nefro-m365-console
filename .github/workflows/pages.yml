@@ -30,6 +30,9 @@ jobs:
 
       - name: Build da demo (sem backend)
         run: npm run build:pages
+        env:
+          VITE_MSAL_CLIENT_ID: ${{ vars.VITE_MSAL_CLIENT_ID }}
+          VITE_MSAL_TENANT_ID: ${{ vars.VITE_MSAL_TENANT_ID }}
 
       # Pages devolve 404.html em rotas desconhecidas; servindo o index ali,
       # links diretos como /usuarios abrem no lugar certo.
