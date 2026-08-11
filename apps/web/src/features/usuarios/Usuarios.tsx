@@ -1,26 +1,14 @@
-import { CLASSIFICACOES, REGIMES, TIPOS_LICENCA, dataBr, rotuloTipoContrato } from '@nefro/dominio'
-import { useState } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { Carregando, Erro } from '../../components/Estado'
-import {
-  IconeBusca,
-  IconeChave,
-  IconeEditar,
-  IconeInativar,
-  IconeNovaConta,
-} from '../../components/icones'
+import { IconeBusca, IconeChave, IconeInativar, IconeNovaConta } from '../../components/icones'
 import { useToast } from '../../components/Toast'
-import { contasRepo, relatoriosRepo, type Conta, type FiltroContas, type StatusConta } from '../../data'
 import { useSubtitulo } from '../../layout/pagina'
-import { baixar } from '../../lib/baixar'
-import { useDados } from '../../lib/dados'
-import { BADGE, iniciais, money, quando } from '../../lib/formato'
-import { useConsulta } from '../../lib/useConsulta'
-import { useDebounce } from '../../lib/useDebounce'
-import { DetalheConta } from './DetalheConta'
-import { FormularioConta } from './FormularioConta'
+import { diasParaStatus, useDadosReais, type StatusReal } from '../../lib/dadosReais'
+import { BADGE, iniciais, quando } from '../../lib/formato'
+import { gerarSenhaTemporaria, type UsuarioReal } from '../../lib/graph'
 import estilos from './Usuarios.module.css'
 
-const STATUS: Array<[StatusConta | 'todos', string]> = [
+const STATUS: Array<[StatusReal | 'todos', string]> = [
   ['todos', 'Todos'],
   ['ativo', 'Ativos'],
   ['ocioso', 'Ociosos'],
@@ -28,186 +16,118 @@ const STATUS: Array<[StatusConta | 'todos', string]> = [
   ['nunca', 'Nunca acessaram'],
 ]
 
-const FILTRO_INICIAL: FiltroContas = {
-  q: '',
-  depto: 'todos',
-  unidade: 'todos',
-  tipoLicenca: 'todos',
-  classificacao: 'todos',
-  regime: 'todos',
-  produto: 'todos',
-  status: 'todos',
-  sort: 'dias',
-  dir: -1,
+type EstadoNovaConta = {
+  aberto: boolean
+  nome: string
+  upn: string
+  confirmando: boolean
+  criando: boolean
+  erro: string | null
+  criado: { upn: string; senha: string } | null
 }
 
-/** `null` = formulário fechado; `{conta: null}` = cadastro novo. */
-type Formulario = { conta: Conta | null } | null
+const NOVA_CONTA_INICIAL: EstadoNovaConta = {
+  aberto: false,
+  nome: '',
+  upn: '',
+  confirmando: false,
+  criando: false,
+  erro: null,
+  criado: null,
+}
 
-const mesmoTexto = (valores: string[]): Array<[string, string]> => valores.map((v) => [v, v])
+type AcaoSenha = { usuario: UsuarioReal; executando: boolean; erro: string | null; senha: string | null }
+type AcaoSituacao = { usuario: UsuarioReal; habilitarPara: boolean; executando: boolean; erro: string | null }
 
-/** Um seletor de filtro: a primeira opção é sempre "todos". */
-function Seletor({
-  valor,
-  rotuloTodos,
-  opcoes,
-  aoMudar,
-}: {
-  valor: string
-  rotuloTodos: string
-  opcoes: Array<[string, string]>
-  aoMudar: (valor: string) => void
-}) {
-  return (
-    <select
-      className="sel"
-      aria-label={rotuloTodos}
-      value={valor}
-      onChange={(e) => aoMudar(e.target.value)}
-    >
-      <option value="todos">{rotuloTodos}</option>
-      {opcoes.map(([chave, texto]) => (
-        <option key={chave} value={chave}>
-          {texto}
-        </option>
-      ))}
-    </select>
-  )
+const OVERLAY: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.55)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 50,
+  padding: 16,
 }
 
 export function Usuarios() {
-  const { versao, invalidar } = useDados()
+  const dr = useDadosReais()
   const toast = useToast()
-  const [filtro, setFiltro] = useState<FiltroContas>(FILTRO_INICIAL)
-  const [contaAberta, setContaAberta] = useState<string | null>(null)
-  const [formulario, setFormulario] = useState<Formulario>(null)
-  const [senhaGerada, setSenhaGerada] = useState<{ nome: string; senha: string } | null>(null)
-  const busca = useDebounce(filtro.q)
+  const [busca, setBusca] = useState('')
+  const [status, setStatus] = useState<StatusReal | 'todos'>('todos')
+  const [novaConta, setNovaConta] = useState<EstadoNovaConta>(NOVA_CONTA_INICIAL)
+  const [acaoSenha, setAcaoSenha] = useState<AcaoSenha | null>(null)
+  const [acaoSituacao, setAcaoSituacao] = useState<AcaoSituacao | null>(null)
 
-  const { dados, carregando, erro, recarregar } = useConsulta(
-    () => contasRepo.listar({ ...filtro, q: busca }),
-    [
-      busca,
-      filtro.depto,
-      filtro.unidade,
-      filtro.tipoLicenca,
-      filtro.classificacao,
-      filtro.regime,
-      filtro.produto,
-      filtro.status,
-      filtro.sort,
-      filtro.dir,
-      versao,
-    ],
-  )
+  const usuarios = dr.usuarios
 
-  useSubtitulo(
-    dados
-      ? `${dados.total} contas · ${dados.contas.filter((c) => c.status !== 'ativo').length} precisam de revisão nesta seleção`
-      : 'Carregando…',
-  )
+  const filtrados = useMemo(() => {
+    if (!usuarios) return null
+    const termo = busca.trim().toLowerCase()
+    return usuarios
+      .filter((u) => !termo || u.nome.toLowerCase().includes(termo) || u.upn.toLowerCase().includes(termo))
+      .filter((u) => status === 'todos' || diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) === status)
+      .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
+  }, [usuarios, busca, status, dr.limiarOcioso, dr.limiarInativo])
 
-  /** Clicar na mesma coluna inverte a ordem; em outra, começa pelo padrão dela. */
-  function ordenarPor(coluna: FiltroContas['sort']) {
-    setFiltro((atual) => ({
-      ...atual,
-      sort: coluna,
-      dir: atual.sort === coluna ? ((atual.dir * -1) as 1 | -1) : coluna === 'nome' ? 1 : -1,
-    }))
-  }
+  useSubtitulo(usuarios ? `${usuarios.length} contas · ${filtrados?.length ?? 0} nesta seleção` : 'Conectando com a Microsoft…')
 
-  async function exportarSelecao() {
-    if (!dados) return
+  async function confirmarCriacao() {
+    setNovaConta((f) => ({ ...f, criando: true, erro: null }))
     try {
-      const arquivo = await relatoriosRepo.exportarSelecao(dados.contas.map((c) => c.upn))
-      baixar(arquivo)
-      invalidar()
-      toast(`Seleção exportada: ${arquivo.nome}`)
-    } catch (falha) {
-      toast((falha as Error).message)
+      const senha = gerarSenhaTemporaria()
+      const nome = novaConta.nome.trim()
+      const upn = novaConta.upn.trim()
+      await dr.criarUsuario({ nome, upn, senha })
+      toast('Conta criada no Microsoft 365: ' + upn)
+      setNovaConta((f) => ({ ...f, criando: false, confirmando: false, criado: { upn, senha } }))
+    } catch (e: any) {
+      setNovaConta((f) => ({ ...f, criando: false, erro: e && e.message ? e.message : 'Não foi possível criar a conta.' }))
     }
   }
 
-  async function redefinirSenha(conta: Conta) {
+  function fecharNovaConta() {
+    setNovaConta(NOVA_CONTA_INICIAL)
+  }
+
+  async function confirmarRedefinicao() {
+    if (!acaoSenha) return
+    setAcaoSenha((a) => (a ? { ...a, executando: true, erro: null } : a))
     try {
-      const { senha } = await contasRepo.redefinirSenha(conta.upn)
-      setSenhaGerada({ nome: conta.nome, senha })
-      invalidar()
-    } catch (falha) {
-      toast((falha as Error).message)
+      const senha = await dr.redefinirSenha(acaoSenha.usuario.id)
+      toast('Senha redefinida para ' + acaoSenha.usuario.nome)
+      setAcaoSenha((a) => (a ? { ...a, executando: false, senha } : a))
+    } catch (e: any) {
+      setAcaoSenha((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : 'Não foi possível redefinir a senha.' } : a))
     }
   }
 
-  async function alternarSituacao(conta: Conta) {
-    const acao = conta.habilitada ? 'Inativar' : 'Reativar'
-    if (!window.confirm(`${acao} a conta de ${conta.nome}?`)) return
+  async function confirmarSituacao() {
+    if (!acaoSituacao) return
+    setAcaoSituacao((a) => (a ? { ...a, executando: true, erro: null } : a))
     try {
-      const { habilitada } = await contasRepo.alternarSituacao(conta.upn)
-      invalidar()
-      toast(habilitada ? `Conta de ${conta.nome} reativada` : `Conta de ${conta.nome} inativada`)
-    } catch (falha) {
-      toast((falha as Error).message)
+      await dr.alternarSituacao(acaoSituacao.usuario.id, acaoSituacao.habilitarPara)
+      toast(`Conta de ${acaoSituacao.usuario.nome} ${acaoSituacao.habilitarPara ? 'reativada' : 'desativada'}`)
+      setAcaoSituacao(null)
+    } catch (e: any) {
+      setAcaoSituacao((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : 'Não foi possível alterar a conta.' } : a))
     }
   }
 
-  const seta = (coluna: FiltroContas['sort']) =>
-    filtro.sort === coluna ? (filtro.dir < 0 ? ' ↓' : ' ↑') : ''
-
-  const aoFiltrar = (campo: keyof FiltroContas) => (valor: string) =>
-    setFiltro((atual) => ({ ...atual, [campo]: valor }))
-
-  if (erro) return <Erro mensagem={erro} aoTentarNovamente={recarregar} />
+  if (dr.erroConexao) return <Erro mensagem={dr.erroConexao} aoTentarNovamente={dr.conectar} />
+  if (dr.conectando || !usuarios) {
+    return dr.erroUsuarios ? <Erro mensagem={dr.erroUsuarios} /> : <Carregando texto="Lendo contas do Microsoft 365…" />
+  }
 
   return (
     <>
       <div className={estilos.toolbar}>
         <div className={estilos.search}>
           <IconeBusca />
-          <input
-            placeholder="Buscar por nome, e-mail ou cargo"
-            value={filtro.q}
-            onChange={(e) => setFiltro({ ...filtro, q: e.target.value })}
-          />
+          <input placeholder="Buscar por nome ou e-mail" value={busca} onChange={(e) => setBusca(e.target.value)} />
         </div>
 
-        <Seletor
-          valor={filtro.unidade}
-          rotuloTodos="Todas as unidades"
-          opcoes={mesmoTexto(dados?.unidades ?? [])}
-          aoMudar={aoFiltrar('unidade')}
-        />
-        <Seletor
-          valor={filtro.depto}
-          rotuloTodos="Todos os setores"
-          opcoes={mesmoTexto(dados?.deptos ?? [])}
-          aoMudar={aoFiltrar('depto')}
-        />
-        <Seletor
-          valor={filtro.tipoLicenca}
-          rotuloTodos="Todos os tipos de licença"
-          opcoes={TIPOS_LICENCA}
-          aoMudar={aoFiltrar('tipoLicenca')}
-        />
-        <Seletor
-          valor={filtro.classificacao}
-          rotuloTodos="Toda classificação"
-          opcoes={CLASSIFICACOES}
-          aoMudar={aoFiltrar('classificacao')}
-        />
-        <Seletor
-          valor={filtro.regime}
-          rotuloTodos="Todo regime"
-          opcoes={REGIMES}
-          aoMudar={aoFiltrar('regime')}
-        />
-        <Seletor
-          valor={filtro.produto}
-          rotuloTodos="Todos os produtos"
-          opcoes={mesmoTexto(dados?.produtos ?? [])}
-          aoMudar={aoFiltrar('produto')}
-        />
-
-        <button className="btn btn-primary" onClick={() => setFormulario({ conta: null })}>
+        <button className="btn btn-primary" onClick={() => setNovaConta((f) => ({ ...f, aberto: true }))}>
           <IconeNovaConta />
           Nova conta
         </button>
@@ -216,226 +136,253 @@ export function Usuarios() {
       <div className={estilos.toolbar}>
         <div className={estilos.chips}>
           {STATUS.map(([chave, rotulo]) => (
-            <button
-              key={chave}
-              className={`${estilos.chip} ${filtro.status === chave ? estilos.on : ''}`}
-              onClick={() => setFiltro({ ...filtro, status: chave })}
-            >
+            <button key={chave} className={`${estilos.chip} ${status === chave ? estilos.on : ''}`} onClick={() => setStatus(chave)}>
               {rotulo}
             </button>
           ))}
         </div>
       </div>
 
-      {senhaGerada && (
-        <div className={estilos.senha}>
-          <div>
-            <b>Senha temporária de {senhaGerada.nome}</b>
-            <span className="mono">{senhaGerada.senha}</span>
-          </div>
-          <button
-            className="btn"
-            onClick={() => {
-              void navigator.clipboard.writeText(senhaGerada.senha)
-              toast('Senha copiada')
-            }}
-          >
-            Copiar
-          </button>
-          <button className="btn btn-ghost" onClick={() => setSenhaGerada(null)}>
-            Fechar
-          </button>
-        </div>
+      {novaConta.aberto && (
+        <section className="card" style={{ marginBottom: 16, padding: 16 }}>
+          <h3>Criar conta real no Microsoft 365</h3>
+          <p className="muted" style={{ fontSize: 12 }}>
+            Grava de verdade no tenant via Microsoft Graph. Só funciona se sua conta tiver papel de administrador.
+          </p>
+
+          {novaConta.criado ? (
+            <div style={{ marginTop: 12 }}>
+              <p style={{ color: 'var(--verde, #4ade80)' }}>Conta criada com sucesso!</p>
+              <p>
+                UPN: <b>{novaConta.criado.upn}</b>
+              </p>
+              <p>
+                Senha temporária: <b style={{ fontFamily: 'monospace' }}>{novaConta.criado.senha}</b>
+              </p>
+              <p className="muted" style={{ fontSize: 12 }}>
+                Copie agora e envie com segurança: ela não aparece novamente. A conta exige troca de senha no
+                primeiro login.
+              </p>
+              <button className="btn" onClick={fecharNovaConta} style={{ marginTop: 8 }}>
+                Fechar
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 420 }}>
+              <label>
+                Nome completo
+                <input
+                  className="input"
+                  style={{ width: '100%', marginTop: 4 }}
+                  value={novaConta.nome}
+                  onChange={(e) => setNovaConta((f) => ({ ...f, nome: e.target.value }))}
+                  placeholder="Ex.: Maria Souza"
+                />
+              </label>
+              <label>
+                E-mail / UPN completo
+                <input
+                  className="input"
+                  style={{ width: '100%', marginTop: 4 }}
+                  value={novaConta.upn}
+                  onChange={(e) => setNovaConta((f) => ({ ...f, upn: e.target.value }))}
+                  placeholder="Ex.: maria.souza@nefroclinicas.com.br"
+                />
+              </label>
+
+              {novaConta.erro && <p style={{ color: 'var(--rose)' }}>{novaConta.erro}</p>}
+
+              {!novaConta.confirmando ? (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-primary"
+                    disabled={!novaConta.nome.trim() || !novaConta.upn.trim().includes('@')}
+                    onClick={() => setNovaConta((f) => ({ ...f, confirmando: true }))}
+                  >
+                    Continuar
+                  </button>
+                  <button className="btn" onClick={fecharNovaConta}>
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <div style={{ background: 'rgba(244,63,94,0.1)', padding: 12, borderRadius: 8 }}>
+                  <p>
+                    Confirma a criação da conta real <b>{novaConta.upn.trim()}</b> no Microsoft 365? Essa ação
+                    grava no tenant de verdade e não tem um botão de "desfazer" automático.
+                  </p>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button className="btn btn-primary" onClick={confirmarCriacao} disabled={novaConta.criando}>
+                      {novaConta.criando ? 'Criando...' : 'Sim, criar agora'}
+                    </button>
+                    <button className="btn" onClick={() => setNovaConta((f) => ({ ...f, confirmando: false }))} disabled={novaConta.criando}>
+                      Voltar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
-      {carregando && !dados ? (
-        <Carregando />
-      ) : (
-        dados && (
-          <div className={estilos.tableCard}>
-            <div className={estilos.rolagem}>
-              <table>
-                <thead>
+      {filtrados && (
+        <div className={estilos.tableCard}>
+          <div className={estilos.rolagem}>
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Usuário</th>
+                  <th style={{ textAlign: 'left' }}>Licenças</th>
+                  <th>Último acesso</th>
+                  <th>MFA</th>
+                  <th>OneDrive</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtrados.length === 0 ? (
                   <tr>
-                    <th className="s" onClick={() => ordenarPor('nome')}>
-                      Usuário{seta('nome')}
-                    </th>
-                    <th>Setor</th>
-                    <th>Licença</th>
-                    <th className="s" onClick={() => ordenarPor('dias')}>
-                      Último acesso{seta('dias')}
-                    </th>
-                    <th>MFA</th>
-                    <th className="s" onClick={() => ordenarPor('gb')}>
-                      OneDrive{seta('gb')}
-                    </th>
-                    <th>Contrato</th>
-                    <th className="s" onClick={() => ordenarPor('renovacao')}>
-                      Renovação{seta('renovacao')}
-                    </th>
-                    <th className="s" onClick={() => ordenarPor('valor')}>
-                      Valor total{seta('valor')}
-                    </th>
-                    <th>Status</th>
-                    <th>Ações</th>
+                    <td colSpan={7} className={estilos.vazio}>
+                      <b>Nenhuma conta com esses filtros</b>
+                      <span className="muted" style={{ fontSize: 13 }}>
+                        Limpe a busca ou escolha outro status.
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {dados.contas.length === 0 ? (
-                    <tr>
-                      <td colSpan={11} className={estilos.vazio}>
-                        <b>Nenhuma conta com esses filtros</b>
-                        <span className="muted" style={{ fontSize: 13 }}>
-                          Limpe a busca ou escolha outra combinação de filtros.
-                        </span>
-                      </td>
-                    </tr>
-                  ) : (
-                    dados.contas.map((conta) => (
-                      <tr key={conta.upn} onClick={() => setContaAberta(conta.upn)}>
+                ) : (
+                  filtrados.map((u) => {
+                    const mfaConta = dr.mapaMfa.get(u.upn.toLowerCase())
+                    const gb = dr.mapaArmazenamento.get(u.upn.toLowerCase())
+                    const st = diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo)
+                    return (
+                      <tr key={u.id}>
                         <td>
                           <div className="person">
-                            <div className="av">{iniciais(conta.nome)}</div>
+                            <div className="av">{iniciais(u.nome)}</div>
                             <div>
-                              <b>{conta.nome}</b>
-                              <span>{conta.upn}</span>
+                              <b>{u.nome}</b>
+                              <span>{u.upn}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="muted">{conta.depto}</td>
-                        <td>
-                          <span className="badge b-neutral">
-                            <i
-                              style={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: 2,
-                                background: conta.sku.cor,
-                                display: 'inline-block',
-                              }}
-                            />
-                            {conta.sku.curto}
-                          </span>
+                        <td style={{ fontSize: 12 }}>{dr.nomesLicencasDoUsuario(u)}</td>
+                        <td className="mono" style={{ textAlign: 'center' }}>
+                          {quando(u.diasUltimoAcesso)}
                         </td>
-                        <td
-                          className="mono"
-                          style={{ color: conta.status === 'ativo' ? 'var(--text-2)' : 'var(--text)' }}
-                        >
-                          {quando(conta.diasUltimoAcesso)}
-                        </td>
-                        <td>
-                          {conta.ehRecurso ? (
+                        <td style={{ textAlign: 'center' }}>
+                          {mfaConta === undefined ? (
                             <span className="muted">—</span>
-                          ) : conta.mfa ? (
+                          ) : mfaConta ? (
                             <span className="badge b-ok">Ativo</span>
                           ) : (
                             <span className="badge b-bad">Sem MFA</span>
                           )}
                         </td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                            <div className="bar" style={{ width: 56, minWidth: 56 }}>
-                              <i
-                                style={{
-                                  width: `${Math.min(100, (conta.oneDriveGb / 45) * 100)}%`,
-                                  background: conta.oneDriveGb > 25 ? 'var(--amber)' : 'var(--accent)',
-                                }}
-                              />
-                            </div>
-                            <span className="mono" style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                              {conta.oneDriveGb.toFixed(1)} GB
-                            </span>
-                          </div>
+                        <td className="mono" style={{ textAlign: 'center', fontSize: 12 }}>
+                          {gb === undefined ? '—' : gb.toFixed(1) + ' GB'}
                         </td>
-                        <td className="muted">{rotuloTipoContrato(conta.tipoContrato)}</td>
-                        <td className="mono" style={{ fontSize: 12.5 }}>
-                          {dataBr(conta.dataRenovacao)}
-                        </td>
-                        <td className="mono" style={{ fontSize: 12.5 }}>
-                          {money(conta.valorTotal)}
-                        </td>
-                        <td>
-                          <span className={`badge ${BADGE[conta.status].classe}`}>
-                            {BADGE[conta.status].rotulo}
-                          </span>
-                          {!conta.habilitada && (
+                        <td style={{ textAlign: 'center' }}>
+                          <span className={`badge ${BADGE[st].classe}`}>{BADGE[st].rotulo}</span>
+                          {!u.habilitada && (
                             <span className="badge b-neutral" style={{ marginLeft: 6 }}>
-                              Inativada
+                              Desativada
                             </span>
                           )}
                         </td>
                         <td>
-                          <div
-                            className={estilos.acoes}
-                            onClick={(evento) => evento.stopPropagation()}
-                          >
-                            <button
-                              title="Editar cadastro"
-                              aria-label={`Editar cadastro de ${conta.nome}`}
-                              onClick={() => setFormulario({ conta })}
-                            >
-                              <IconeEditar />
-                            </button>
+                          <div className={estilos.acoes} onClick={(e) => e.stopPropagation()}>
                             <button
                               title="Redefinir senha"
-                              aria-label={`Redefinir senha de ${conta.nome}`}
-                              onClick={() => void redefinirSenha(conta)}
+                              aria-label={`Redefinir senha de ${u.nome}`}
+                              onClick={() => setAcaoSenha({ usuario: u, executando: false, erro: null, senha: null })}
                             >
                               <IconeChave />
                             </button>
                             <button
-                              className={conta.habilitada ? estilos.perigo : ''}
-                              title={conta.habilitada ? 'Inativar usuário' : 'Reativar usuário'}
-                              aria-label={`${conta.habilitada ? 'Inativar' : 'Reativar'} ${conta.nome}`}
-                              onClick={() => void alternarSituacao(conta)}
+                              className={u.habilitada ? estilos.perigo : ''}
+                              title={u.habilitada ? 'Desativar conta' : 'Reativar conta'}
+                              aria-label={`${u.habilitada ? 'Desativar' : 'Reativar'} ${u.nome}`}
+                              onClick={() =>
+                                setAcaoSituacao({ usuario: u, habilitarPara: !u.habilitada, executando: false, erro: null })
+                              }
                             >
                               <IconeInativar />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
-            <div className={estilos.footNote}>
-              <span>
-                {dados.contas.length} de {dados.total} contas
-              </span>
-              {dados.custoSelecao > 0 && (
-                <span style={{ color: 'var(--amber)' }}>
-                  · {money(dados.custoSelecao)}/mês em licenças sem uso nesta seleção
-                </span>
-              )}
-              <button
-                className="act"
-                style={{ marginLeft: 'auto', color: 'var(--accent)' }}
-                onClick={exportarSelecao}
-                disabled={dados.contas.length === 0}
-              >
-                Exportar seleção
+      {acaoSenha && (
+        <div style={OVERLAY} onClick={() => !acaoSenha.executando && setAcaoSenha(null)}>
+          <div className="card" style={{ padding: 20, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <h3>Redefinir senha de {acaoSenha.usuario.nome}</h3>
+            {acaoSenha.senha ? (
+              <>
+                <p style={{ marginTop: 10 }}>
+                  Nova senha temporária: <b style={{ fontFamily: 'monospace' }}>{acaoSenha.senha}</b>
+                </p>
+                <p className="muted" style={{ fontSize: 12 }}>
+                  Copie agora e envie com segurança: ela não aparece novamente. A conta exige troca no próximo
+                  login.
+                </p>
+                <button className="btn" style={{ marginTop: 8 }} onClick={() => setAcaoSenha(null)}>
+                  Fechar
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+                  Isso grava uma senha temporária nova de verdade no Microsoft 365 para <b>{acaoSenha.usuario.upn}</b>,
+                  com troca obrigatória no próximo login.
+                </p>
+                {acaoSenha.erro && <p style={{ color: 'var(--rose)' }}>{acaoSenha.erro}</p>}
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button className="btn btn-primary" onClick={confirmarRedefinicao} disabled={acaoSenha.executando}>
+                    {acaoSenha.executando ? 'Redefinindo...' : 'Sim, redefinir agora'}
+                  </button>
+                  <button className="btn" onClick={() => setAcaoSenha(null)} disabled={acaoSenha.executando}>
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {acaoSituacao && (
+        <div style={OVERLAY} onClick={() => !acaoSituacao.executando && setAcaoSituacao(null)}>
+          <div className="card" style={{ padding: 20, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <h3>
+              {acaoSituacao.habilitarPara ? 'Reativar' : 'Desativar'} conta de {acaoSituacao.usuario.nome}
+            </h3>
+            <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
+              Isso {acaoSituacao.habilitarPara ? 'reativa' : 'desativa'} de verdade a conta{' '}
+              <b>{acaoSituacao.usuario.upn}</b> no Microsoft 365
+              {acaoSituacao.habilitarPara ? '' : ' (a pessoa não conseguirá mais entrar)'}.
+            </p>
+            {acaoSituacao.erro && <p style={{ color: 'var(--rose)' }}>{acaoSituacao.erro}</p>}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button className="btn btn-primary" onClick={confirmarSituacao} disabled={acaoSituacao.executando}>
+                {acaoSituacao.executando ? 'Aplicando...' : `Sim, ${acaoSituacao.habilitarPara ? 'reativar' : 'desativar'} agora`}
+              </button>
+              <button className="btn" onClick={() => setAcaoSituacao(null)} disabled={acaoSituacao.executando}>
+                Cancelar
               </button>
             </div>
           </div>
-        )
+        </div>
       )}
-
-      <DetalheConta
-        upn={contaAberta}
-        aoFechar={() => setContaAberta(null)}
-        aoEditar={(conta) => {
-          setContaAberta(null)
-          setFormulario({ conta })
-        }}
-      />
-
-      <FormularioConta
-        aberto={formulario !== null}
-        conta={formulario?.conta ?? null}
-        aoFechar={() => setFormulario(null)}
-      />
     </>
   )
 }

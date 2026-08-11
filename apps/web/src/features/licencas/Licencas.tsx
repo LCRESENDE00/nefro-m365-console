@@ -1,140 +1,130 @@
 import { useNavigate } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
-import { licencasRepo, type Plano } from '../../data'
+import { useToast } from '../../components/Toast'
+import { IconeExportar } from '../../components/icones'
 import { useSubtitulo } from '../../layout/pagina'
-import { useDados } from '../../lib/dados'
-import { money, money0 } from '../../lib/formato'
-import { useConsulta } from '../../lib/useConsulta'
+import { baixar } from '../../lib/baixar'
+import { useDadosReais } from '../../lib/dadosReais'
 import estilos from './Licencas.module.css'
 
+function celulaCsv(valor: string | number): string {
+  const texto = String(valor ?? '')
+  if (/[",\n;]/.test(texto)) return '"' + texto.replace(/"/g, '""') + '"'
+  return texto
+}
+
+function linhasParaCsv(linhas: (string | number)[][]): string {
+  return linhas.map((linha) => linha.map(celulaCsv).join(',')).join('\n')
+}
+
 export function Licencas() {
-  const { versao } = useDados()
   const navegar = useNavigate()
-  const { dados, carregando, erro, recarregar } = useConsulta(() => licencasRepo.resumo(), [versao])
+  const toast = useToast()
+  const dr = useDadosReais()
 
   useSubtitulo(
-    dados
-      ? `${dados.planos.length} planos · ${dados.planos.reduce((s, p) => s + p.comprados, 0)} assentos contratados`
-      : 'Carregando…',
+    dr.licencas.length
+      ? `${dr.licencas.length} planos · ${dr.licencas.reduce((s, p) => s + p.comprados, 0)} assentos contratados`
+      : 'Conectando com a Microsoft…',
   )
 
-  if (erro) return <Erro mensagem={erro} aoTentarNovamente={recarregar} />
-  if (carregando || !dados) return <Carregando />
+  if (dr.erroConexao) return <Erro mensagem={dr.erroConexao} aoTentarNovamente={dr.conectar} />
+  if (dr.conectando && dr.licencas.length === 0) return <Carregando texto="Lendo licenças do Microsoft 365…" />
+
+  const totalComprados = dr.licencas.reduce((s, p) => s + p.comprados, 0)
+  const totalEmUso = dr.licencas.reduce((s, p) => s + p.emUso, 0)
+  const totalLivres = dr.licencas.reduce((s, p) => s + p.livres, 0)
+
+  function exportarPlanilha() {
+    const linhas: (string | number)[][] = []
+    linhas.push(['LICENÇAS REAIS (Microsoft Graph)'])
+    linhas.push(['Licença', 'Código técnico', 'Comprados', 'Em uso', 'Livres'])
+    for (const sku of dr.licencas) linhas.push([sku.nome, sku.skuPartNumber, sku.comprados, sku.emUso, sku.livres])
+
+    if (dr.usuarios) {
+      linhas.push([])
+      linhas.push(['USUÁRIOS E LICENÇAS (Microsoft Graph)'])
+      linhas.push(['Nome', 'UPN', 'Licenças'])
+      for (const u of dr.usuarios) linhas.push([u.nome, u.upn, dr.nomesLicencasDoUsuario(u)])
+    }
+
+    const csv = '\uFEFF' + linhasParaCsv(linhas)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const agora = new Date().toISOString().slice(0, 10)
+    const nome = 'licencas-m365-' + agora + '.csv'
+    baixar({ nome, conteudo: blob })
+    toast('Planilha gerada: ' + nome)
+  }
 
   return (
     <>
+      <div className={estilos.toolbar ?? ''} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button className="btn" onClick={exportarPlanilha}>
+          <IconeExportar />
+          Exportar planilha (CSV)
+        </button>
+      </div>
+
       <div className="grid g3" style={{ marginBottom: 16 }}>
         <div className="card kpi">
-          <div className="label">Custo mensal atribuído</div>
-          <div className="v">{money(dados.custoAtribuido)}</div>
-          <div className="d">{dados.totalContas} licenças em contas</div>
+          <div className="label">Assentos contratados</div>
+          <div className="v">{totalComprados}</div>
+          <div className="d">em {dr.licencas.length} planos</div>
         </div>
         <div className="card kpi">
-          <div className="label">Assentos livres</div>
-          <div className="v">{dados.assentosLivres}</div>
-          <div className="d">contratados e nunca atribuídos</div>
+          <div className="label">Em uso</div>
+          <div className="v">{totalEmUso}</div>
+          <div className="d">atribuídos a alguma conta</div>
         </div>
         <div className="card kpi">
-          <div className="label">Economia possível</div>
+          <div className="label">Livres</div>
           <div className="v" style={{ color: 'var(--teal)' }}>
-            {money(dados.economiaPossivel)}
+            {totalLivres}
           </div>
-          <div className="d">removendo licenças sem uso</div>
+          <div className="d">contratados e nunca atribuídos</div>
         </div>
       </div>
 
       <div className="grid g2">
-        {dados.planos.map((plano) => (
-          <CartaoPlano key={plano.codigo} plano={plano} aoVerContas={() => navegar('/usuarios')} />
+        {dr.licencas.map((sku) => (
+          <div className={estilos.lic} key={sku.skuId}>
+            <div className={estilos.top}>
+              <div>
+                <h4>{sku.nome}</h4>
+                <span className="muted" style={{ fontSize: 12.3 }}>
+                  {sku.skuPartNumber}
+                </span>
+              </div>
+              <div className={estilos.price}>
+                <b>{sku.comprados}</b>
+                <div className="muted" style={{ fontSize: 11.5 }}>
+                  assentos
+                </div>
+              </div>
+            </div>
+
+            <div className={estilos.seats}>
+              <span style={{ width: `${sku.comprados ? (sku.emUso / sku.comprados) * 100 : 0}%`, background: 'var(--accent)' }} />
+              <span style={{ width: `${sku.comprados ? (sku.livres / sku.comprados) * 100 : 0}%`, background: 'var(--surface-3)' }} />
+            </div>
+
+            <div className={estilos.legenda}>
+              <span>
+                <i style={{ background: 'var(--accent)' }} />
+                {sku.emUso} em uso
+              </span>
+              <span>
+                <i style={{ background: 'var(--surface-3)' }} />
+                {sku.livres} livres
+              </span>
+            </div>
+
+            <button className="btn" style={{ alignSelf: 'flex-start' }} onClick={() => navegar('/usuarios')}>
+              Ver contas com essa licença
+            </button>
+          </div>
         ))}
       </div>
-
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-h">
-          <h3>Como o gasto se distribui</h3>
-        </div>
-        <div className="stack" style={{ height: 16, marginTop: 6 }}>
-          {dados.planos.map((plano) => (
-            <span
-              key={plano.codigo}
-              style={{
-                width: `${((plano.custoMensal / dados.custoContratado) * 100).toFixed(1)}%`,
-                background: plano.cor,
-              }}
-            />
-          ))}
-        </div>
-        <div className="legend" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-          {dados.planos.map((plano) => (
-            <div className="li" key={plano.codigo}>
-              <span className="sw" style={{ background: plano.cor }} />
-              {plano.curto}
-              <span className="val">{money0(plano.custoMensal)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </>
-  )
-}
-
-function CartaoPlano({ plano, aoVerContas }: { plano: Plano; aoVerContas: () => void }) {
-  const pct = (valor: number) => `${((valor / plano.comprados) * 100).toFixed(1)}%`
-  const desperdicados = plano.semAcesso + plano.livres
-
-  return (
-    <div className={estilos.lic}>
-      <div className={estilos.top}>
-        <div>
-          <h4>{plano.nome}</h4>
-          <span className="muted" style={{ fontSize: 12.3 }}>
-            {money(plano.preco)} por assento/mês
-          </span>
-        </div>
-        <div className={estilos.price}>
-          <b>{money(plano.custoMensal)}</b>
-          <div className="muted" style={{ fontSize: 11.5 }}>
-            {plano.comprados} assentos
-          </div>
-        </div>
-      </div>
-
-      <div className={estilos.seats}>
-        <span style={{ width: pct(plano.emUso), background: plano.cor }} />
-        <span style={{ width: pct(plano.semAcesso), background: 'var(--amber)', opacity: 0.75 }} />
-        <span style={{ width: pct(plano.livres), background: 'var(--surface-3)' }} />
-      </div>
-
-      <div className={estilos.legenda}>
-        <span>
-          <i style={{ background: plano.cor }} />
-          {plano.emUso} em uso
-        </span>
-        <span>
-          <i style={{ background: 'var(--amber)' }} />
-          {plano.semAcesso} sem acesso
-        </span>
-        <span>
-          <i style={{ background: 'var(--surface-3)' }} />
-          {plano.livres} livres
-        </span>
-      </div>
-
-      {desperdicados > 0 && (
-        <div className={estilos.why}>
-          {plano.semAcesso > 0 &&
-            `${plano.semAcesso} licença${plano.semAcesso > 1 ? 's' : ''} atribuída${plano.semAcesso > 1 ? 's' : ''} a contas sem acesso recente`}
-          {plano.semAcesso > 0 && plano.livres > 0 && ' e '}
-          {plano.livres > 0 &&
-            `${plano.livres} assento${plano.livres > 1 ? 's' : ''} pago${plano.livres > 1 ? 's' : ''} sem ninguém`}
-          {' → '}
-          {money(plano.custoDesperdicado)}/mês.
-        </div>
-      )}
-
-      <button className="btn" style={{ alignSelf: 'flex-start' }} onClick={aoVerContas}>
-        Ver contas deste plano
-      </button>
-    </div>
   )
 }

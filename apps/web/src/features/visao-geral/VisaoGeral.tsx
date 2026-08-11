@@ -1,181 +1,136 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AreaChart } from '../../components/AreaChart'
-import { BarChart } from '../../components/BarChart'
 import { Carregando, Erro } from '../../components/Estado'
-import { metricasRepo } from '../../data'
-import { useDados } from '../../lib/dados'
-import { BADGE, iniciais, money, money0, quando } from '../../lib/formato'
-import { useConsulta } from '../../lib/useConsulta'
-import { DetalheConta } from '../usuarios/DetalheConta'
 import { useSubtitulo } from '../../layout/pagina'
-import estilos from './VisaoGeral.module.css'
-
-const MESES = ['mar', 'abr', 'mai', 'jun', 'jul']
+import { diasParaStatus, useDadosReais } from '../../lib/dadosReais'
+import { BADGE, iniciais, quando } from '../../lib/formato'
 
 export function VisaoGeral() {
-  const { versao } = useDados()
-  const { dados, carregando, erro, recarregar } = useConsulta(() => metricasRepo.visaoGeral(), [versao])
-  const [contaAberta, setContaAberta] = useState<string | null>(null)
+  const navegar = useNavigate()
+  const dr = useDadosReais()
+  const usuarios = dr.usuarios
+
+  const licenciados = useMemo(() => (usuarios ? usuarios.filter((u) => u.totalLicencas > 0) : null), [usuarios])
+
+  const contagem = useMemo(() => {
+    const c = { ativo: 0, ocioso: 0, inativo: 0, nunca: 0 }
+    if (licenciados) {
+      for (const u of licenciados) c[diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo)]++
+    }
+    return c
+  }, [licenciados, dr.limiarOcioso, dr.limiarInativo])
+
+  const semMfa = licenciados ? licenciados.filter((u) => dr.mapaMfa.get(u.upn.toLowerCase()) === false).length : null
+
+  const revisao = useMemo(() => {
+    if (!licenciados) return []
+    return [...licenciados]
+      .filter((u) => diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) !== 'ativo')
+      .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
+      .slice(0, 8)
+  }, [licenciados, dr.limiarOcioso, dr.limiarInativo])
 
   useSubtitulo(
-    dados
-      ? `Sem acesso há mais de ${dados.limiares.limiarInativo} dias conta como inativa · ${dados.totalContas} contas licenciadas`
-      : 'Carregando…',
+    licenciados
+      ? `Sem acesso há mais de ${dr.limiarInativo} dias conta como inativa · ${licenciados.length} contas licenciadas`
+      : 'Conectando com a Microsoft…',
   )
 
-  if (erro) return <Erro mensagem={erro} aoTentarNovamente={recarregar} />
-  if (carregando || !dados) return <Carregando />
+  if (dr.erroConexao) return <Erro mensagem={dr.erroConexao} aoTentarNovamente={dr.conectar} />
+  if (dr.conectando || !usuarios) {
+    return dr.erroUsuarios ? <Erro mensagem={dr.erroUsuarios} /> : <Carregando texto="Lendo o Microsoft 365…" />
+  }
+
+  const maiorLicenca = Math.max(1, ...dr.licencas.map((l) => l.emUso))
 
   return (
     <>
       <div className="grid g4">
         <div className="card kpi">
           <div className="label">Contas licenciadas</div>
-          <div className="v">{dados.totalContas}</div>
+          <div className="v">{licenciados?.length ?? 0}</div>
           <div className="d">
-            {dados.ativos} com acesso nos últimos {dados.limiares.limiarOcioso} dias
+            {contagem.ativo} com acesso nos últimos {dr.limiarOcioso} dias
           </div>
         </div>
         <div className="card kpi">
           <div className="label">Ociosas</div>
           <div className="v" style={{ color: 'var(--amber)' }}>
-            {dados.ociosos}
+            {contagem.ocioso}
           </div>
           <div className="d">
-            sem acesso entre {dados.limiares.limiarOcioso + 1} e {dados.limiares.limiarInativo} dias
+            sem acesso entre {dr.limiarOcioso + 1} e {dr.limiarInativo} dias
           </div>
         </div>
         <div className="card kpi">
           <div className="label">Inativas</div>
           <div className="v" style={{ color: 'var(--rose)' }}>
-            {dados.inativos}
+            {contagem.inativo + contagem.nunca}
           </div>
           <div className="d">incluindo contas que nunca acessaram</div>
         </div>
         <div className="card kpi">
           <div className="label">Sem MFA</div>
-          <div className="v">{dados.semMfa}</div>
-          <div className="d">de {dados.totalPessoas} contas de pessoas</div>
+          <div className="v">{semMfa === null ? '—' : semMfa}</div>
+          <div className="d">{dr.erroMfa ? 'relatório de MFA indisponível' : `de ${licenciados?.length ?? 0} contas licenciadas`}</div>
         </div>
       </div>
 
       <div className="grid g2" style={{ marginTop: 16 }}>
-        <div className={estilos.waste}>
-          <div className="card-h">
-            <h3>Custo ocioso</h3>
-            <span className="badge b-bad" style={{ marginLeft: 'auto' }}>
-              {dados.ociosos + dados.inativos} licenças paradas
-            </span>
-          </div>
-          <div className={estilos.big}>
-            {money(dados.desperdicioTotal)}
-            <small> /mês</small>
-          </div>
-          <div className="muted" style={{ fontSize: 12.5 }}>
-            {money0(dados.desperdicioTotal * 12)} por ano se nada mudar
-          </div>
-
-          <div className="stack">
-            {dados.desperdicioPorSku.map((fatia) => (
-              <span
-                key={fatia.codigo}
-                style={{
-                  width: `${((fatia.valor / dados.desperdicioTotal) * 100).toFixed(1)}%`,
-                  background: fatia.cor,
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="legend">
-            {dados.desperdicioPorSku.map((fatia) => (
-              <div className="li" key={fatia.codigo}>
-                <span className="sw" style={{ background: fatia.cor }} />
-                {fatia.curto}
-                <span className="val">{money(fatia.valor)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <div className="card">
           <div className="card-h">
-            <h3>Usuários com acesso semanal</h3>
+            <h3>Licenças em uso</h3>
             <span className="muted" style={{ fontSize: 12, marginLeft: 'auto' }}>
-              {dados.serieAcessos.length} semanas
+              {dr.licencas.length} planos
             </span>
           </div>
-          <AreaChart dados={dados.serieAcessos} />
-          <div className={estilos.eixo}>
-            {MESES.map((mes) => (
-              <span key={mes}>{mes}</span>
-            ))}
-          </div>
-          <div className={estilos.nota}>
-            Queda de {dados.serieAcessos[0] - dados.serieAcessos[dados.serieAcessos.length - 1]}{' '}
-            usuários ativos desde o início da série, sem redução de assentos contratados.
-          </div>
-        </div>
-      </div>
-
-      <div className="grid g2" style={{ marginTop: 16 }}>
-        <div className="card">
-          <div className="card-h">
-            <h3>Tempo desde o último acesso</h3>
-          </div>
-          <BarChart
-            barras={dados.distribuicaoAcesso.map((f) => ({
-              rotulo: f.faixa,
-              valor: f.valor,
-              cor: f.cor,
-            }))}
-          />
+          {dr.licencas.map((sku) => (
+            <div className="srow" key={sku.skuId}>
+              <div className="nm">{sku.nome}</div>
+              <div className="bar">
+                <i style={{ width: `${(sku.emUso / maiorLicenca) * 100}%`, background: 'var(--accent)' }} />
+              </div>
+              <div className="gb">
+                {sku.emUso}/{sku.comprados}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div className="card">
           <div className="card-h">
             <h3>Precisam de revisão</h3>
-            <BotaoVerTodos />
+            <button className="act" onClick={() => navegar('/usuarios')}>
+              Ver todos
+            </button>
           </div>
-          {dados.precisamRevisao.map((conta) => (
-            <div
-              key={conta.upn}
-              className="srow"
-              style={{ cursor: 'pointer' }}
-              onClick={() => setContaAberta(conta.upn)}
-            >
-              <div className="person" style={{ flex: 1, minWidth: 0 }}>
-                <div className="av">{iniciais(conta.nome)}</div>
-                <div style={{ minWidth: 0 }}>
-                  <b>{conta.nome}</b>
-                  <span>{conta.cargo}</span>
+          {revisao.length === 0 ? (
+            <p className="muted" style={{ fontSize: 13 }}>
+              Nenhuma conta ociosa ou inativa nesta janela.
+            </p>
+          ) : (
+            revisao.map((u) => (
+              <div key={u.upn} className="srow" style={{ cursor: 'pointer' }} onClick={() => navegar('/usuarios')}>
+                <div className="person" style={{ flex: 1, minWidth: 0 }}>
+                  <div className="av">{iniciais(u.nome)}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <b>{u.nome}</b>
+                    <span>{u.upn}</span>
+                  </div>
                 </div>
+                <span className={`badge ${BADGE[diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo)].classe}`}>
+                  {quando(u.diasUltimoAcesso)}
+                </span>
               </div>
-              <span className={`badge ${BADGE[conta.status].classe}`}>
-                {quando(conta.diasUltimoAcesso)}
-              </span>
-              <span
-                className="mono"
-                style={{ fontSize: 12.5, width: 78, textAlign: 'right', color: 'var(--text-2)' }}
-              >
-                {money(conta.sku.preco)}
-              </span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
-      <DetalheConta upn={contaAberta} aoFechar={() => setContaAberta(null)} />
+      <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>
+        Cargo, setor e custo por licença não aparecem aqui porque não existem na Microsoft Graph — precisam de um
+        backend com banco de dados próprio da clínica.
+      </p>
     </>
-  )
-}
-
-function BotaoVerTodos() {
-  const navegar = useNavigate()
-  return (
-    <button className="act" onClick={() => navegar('/usuarios')}>
-      Ver todos
-    </button>
   )
 }

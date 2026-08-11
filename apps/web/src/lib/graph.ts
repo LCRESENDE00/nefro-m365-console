@@ -27,6 +27,19 @@ async function tokenReal(): Promise<string> {
   return resultado.accessToken
 }
 
+/** Abre o login real da Microsoft (popup) e devolve a conta conectada. Usado na tela de entrada do app. */
+export async function entrarComMicrosoft(): Promise<{ nome?: string; upn: string }> {
+  await garantirMsalInicializado()
+  const contas = msalInstance.getAllAccounts()
+  if (contas.length > 0) {
+    const conta = contas[0]
+    return { nome: conta.name ?? conta.username, upn: conta.username }
+  }
+  const resultado = await msalInstance.loginPopup({ scopes: ESCOPOS_REAIS })
+  const conta = resultado.account
+  return { nome: conta?.name ?? conta?.username, upn: conta?.username ?? '' }
+}
+
 async function chamarGraph(caminho: string, aceitar?: string): Promise<Response> {
   const token = await tokenReal()
   const cabecalhos: Record<string, string> = { Authorization: 'Bearer ' + token }
@@ -236,7 +249,7 @@ export async function lerArmazenamento(): Promise<ContaArmazenamento[]> {
   } catch {
     throw new Error(
       'A Microsoft bloqueia esse relatorio quando chamado direto do navegador (o link de download nao libera CORS). ' +
-      'So funciona com um servidor por tras (backend) buscando esse dado, nao rodando so no site estatico.',
+        'So funciona com um servidor por tras (backend) buscando esse dado, nao rodando so no site estatico.',
     )
   }
   const texto = await resposta.text()
@@ -290,4 +303,19 @@ export async function criarUsuario(dados: NovoUsuario): Promise<{ id: string }> 
   })
   const criado = await resposta.json()
   return { id: criado.id }
+}
+
+/** Redefine a senha de uma conta real (PATCH /users/{id}). Gera senha temporaria com troca obrigatoria. */
+export async function redefinirSenha(id: string, novaSenha: string): Promise<void> {
+  await chamarGraphEscrita('/users/' + id, 'PATCH', {
+    passwordProfile: {
+      forceChangePasswordNextSignIn: true,
+      password: novaSenha,
+    },
+  })
+}
+
+/** Ativa ou desativa uma conta real (PATCH /users/{id} accountEnabled). Reversivel, mas grava no tenant de verdade. */
+export async function definirHabilitada(id: string, habilitada: boolean): Promise<void> {
+  await chamarGraphEscrita('/users/' + id, 'PATCH', { accountEnabled: habilitada })
 }

@@ -8,14 +8,14 @@ import {
   IconeUsuarios,
   IconeVisaoGeral,
 } from '../components/icones'
-import { SEM_BACKEND } from '../data'
 import { useSessao } from '../features/login/sessao'
+import { useDadosReais } from '../lib/dadosReais'
 import estilos from './Layout.module.css'
 
 const PAINEL = [
   { para: '/visao-geral', rotulo: 'Visão geral', Icone: IconeVisaoGeral },
   { para: '/usuarios', rotulo: 'Usuários', Icone: IconeUsuarios },
-  { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas }, { para: '/licencas-reais', rotulo: 'Painel real (M365)', Icone: IconeLicencas },
+  { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas },
   { para: '/armazenamento', rotulo: 'Armazenamento', Icone: IconeArmazenamento },
 ]
 
@@ -25,11 +25,11 @@ const SAIDA = [
   { para: '/configuracoes', rotulo: 'Configurações', Icone: IconeConfiguracoes },
 ]
 
-const classe = ({ isActive }: { isActive: boolean }) =>
-  `${estilos.navItem} ${isActive ? estilos.on : ''}`
+const classe = ({ isActive }: { isActive: boolean }) => `${estilos.navItem} ${isActive ? estilos.on : ''}`
 
 export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null }) {
-  const { sessao, sair } = useSessao()
+  const { sair } = useSessao()
+  const { conectado, conectando, nome } = useDadosReais()
 
   return (
     <aside className={estilos.side}>
@@ -46,9 +46,7 @@ export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null })
         <NavLink key={para} to={para} className={classe}>
           <Icone />
           {rotulo}
-          {para === '/usuarios' && precisamRevisao ? (
-            <span className={estilos.tag}>{precisamRevisao}</span>
-          ) : null}
+          {para === '/usuarios' && precisamRevisao ? <span className={estilos.tag}>{precisamRevisao}</span> : null}
         </NavLink>
       ))}
 
@@ -63,14 +61,10 @@ export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null })
       <div className={estilos.sideFoot}>
         <div className={estilos.row}>
           <span className="dot" />
-          {SEM_BACKEND
-            ? 'Demo estática · sem backend'
-            : sessao?.modo === 'demo'
-              ? 'Modo demo · banco local'
-              : 'Conectado ao tenant'}
+          {conectado ? `Conectado como ${nome ?? 'Microsoft 365'}` : conectando ? 'Conectando…' : 'Aguardando conexão'}
         </div>
         <div className={`${estilos.row} mono`} style={{ fontSize: 10.5, opacity: 0.65 }}>
-          tenant {sessao?.tenantId.slice(0, 8) ?? '—'}…{sessao?.tenantId.slice(-4) ?? ''}
+          Dados reais via Microsoft Graph
         </div>
         <button className={estilos.sair} onClick={sair}>
           Sair da sessão
