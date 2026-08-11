@@ -14,6 +14,7 @@ const TITULOS: Record<string, string> = {
   '/visao-geral': 'Visão geral',
   '/usuarios': 'Usuários',
   '/licencas': 'Licenças',
+  '/licencas-reais': 'Painel real (M365)',
   '/armazenamento': 'Armazenamento',
   '/relatorios': 'Relatórios',
   '/administracao': 'Administração',
@@ -29,6 +30,7 @@ export function Topbar({ limiarInativo }: { limiarInativo: number | null }) {
   const { versao, invalidar } = useDados()
   const [exportando, setExportando] = useState(false)
   const { dados: config } = useConsulta(() => configuracoesRepo.ler(), [versao])
+  const emPainelReal = pathname === '/licencas-reais'
 
   /** A janela define a partir de quantos dias sem acesso a conta vira "inativa". */
   async function trocarJanela(dias: number) {
@@ -59,22 +61,26 @@ export function Topbar({ limiarInativo }: { limiarInativo: number | null }) {
       </div>
 
       <div className={estilos.right}>
-        <div className={estilos.seg} role="group" aria-label="Janela de análise">
-          {JANELAS.map((dias) => (
-            <button
-              key={dias}
-              className={limiarInativo === dias ? estilos.on : ''}
-              onClick={() => trocarJanela(dias)}
-            >
-              {dias}d
-            </button>
-          ))}
-        </div>
+        {!emPainelReal ? (
+          <>
+            <div className={estilos.seg} role="group" aria-label="Janela de análise">
+              {JANELAS.map((dias) => (
+                <button
+                  key={dias}
+                  className={limiarInativo === dias ? estilos.on : ''}
+                  onClick={() => trocarJanela(dias)}
+                >
+                  {dias}d
+                </button>
+              ))}
+            </div>
 
-        <button className="btn" onClick={exportar} disabled={exportando}>
-          <IconeExportar />
-          {exportando ? 'Gerando…' : 'Exportar'}
-        </button>
+            <button className="btn" onClick={exportar} disabled={exportando}>
+              <IconeExportar />
+              {exportando ? 'Gerando…' : 'Exportar'}
+            </button>
+          </>
+        ) : null}
 
         <div className={estilos.avatar} title={config?.contaConectada}>
           {config ? iniciais(config.contaConectada.split('@')[0].replace(/\./g, ' ')) : '··'}

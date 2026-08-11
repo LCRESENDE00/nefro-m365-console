@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { IconeExportar } from '../../components/icones'
+import { useToast } from '../../components/Toast'
+import { baixar } from '../../lib/baixar'
 import {
   lerArmazenamento,
   lerContaConectada,
@@ -29,7 +32,18 @@ function diasParaStatus(dias: number | null): 'ativo' | 'ocioso' | 'inativo' | '
   return 'inativo'
 }
 
+function celulaCsv(valor: string | number): string {
+  const texto = String(valor ?? '')
+  if (/[",\n;]/.test(texto)) return '"' + texto.replace(/"/g, '""') + '"'
+  return texto
+}
+
+function linhasParaCsv(linhas: (string | number)[][]): string {
+  return linhas.map((linha) => linha.map(celulaCsv).join(',')).join('\n')
+}
+
 export function LicencasReais() {
+  const toast = useToast()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [dados, setDados] = useState<Resultado | null>(null)
@@ -79,6 +93,56 @@ export function LicencasReais() {
   const topArmazenamento = dados?.armazenamento
     ? [...dados.armazenamento].sort((a, b) => b.gb - a.gb).slice(0, 10)
     : []
+  const nomesPorSkuId = new Map((dados?.licencas ?? []).map((l) => [l.skuId, l.nome]))
+
+  function nomesLicencasDoUsuario(u: UsuarioReal): string {
+    if (u.skuIds.length === 0) return '-'
+    return u.skuIds.map((id) => nomesPorSkuId.get(id) ?? id).join(', ')
+  }
+
+  function exportarPlanilha() {
+    if (!dados) return
+    const linhas: (string | number)[][] = []
+
+    linhas.push(['LICENCAS REAIS (Microsoft Graph)'])
+    linhas.push(['Licenca', 'Codigo tecnico', 'Comprados', 'Em uso', 'Livres'])
+    for (const sku of dados.licencas) {
+      linhas.push([sku.nome, sku.skuPartNumber, sku.comprados, sku.emUso, sku.livres])
+    }
+    linhas.push([])
+
+    if (usuarios) {
+      linhas.push(['USUARIOS REAIS (Microsoft Graph)'])
+      linhas.push(['Nome', 'UPN', 'Habilitada', 'Ultimo acesso (dias)', 'Qtd licencas', 'Licencas', 'MFA registrado'])
+      for (const u of usuarios) {
+        const mfaConta = mapaMfa.get(u.upn.toLowerCase())
+        linhas.push([
+          u.nome,
+          u.upn,
+          u.habilitada ? 'sim' : 'nao',
+          u.diasUltimoAcesso === null ? 'nunca' : u.diasUltimoAcesso,
+          u.totalLicencas,
+          nomesLicencasDoUsuario(u),
+          mfaConta === undefined ? 'sem dados' : mfaConta ? 'sim' : 'nao',
+        ])
+      }
+      linhas.push([])
+    }
+
+    if (dados.armazenamento) {
+      linhas.push(['ARMAZENAMENTO REAL (OneDrive)'])
+      linhas.push(['Nome', 'UPN', 'GB usados'])
+      for (const c of dados.armazenamento) linhas.push([c.nome, c.upn, c.gb.toFixed(2)])
+      linhas.push([])
+    }
+
+    const csv = '\uFEFF' + linhasParaCsv(linhas)
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const agora = new Date().toISOString().slice(0, 10)
+    const nome = 'painel-real-m365-' + agora + '.csv'
+    baixar({ nome, conteudo: blob })
+    toast('Planilha gerada: ' + nome)
+  }
 
   return (
     <div className="card" style={{ padding: 24 }}>
@@ -97,44 +161,40 @@ export function LicencasReais() {
 
       {dados ? (
         <div style={{ marginTop: 20 }}>
-          {dados.nome ? (
-            <p>
-              Logado como <b>{dados.nome}</b>
-            </p>
-          ) : null}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            {dados.nome ? (
+              <p style={{ margin: 0 }}>
+                Logado como <b>{dados.nome}</b>
+              </p>
+            ) : <span />}
+            <button className="btn" onClick={exportarPlanilha}>
+              <IconeExportar />
+              Exportar planilha (CSV)
+            </button>
+          </div>
 
           {licenciados ? (
             <section style={{ marginTop: 24 }}>
               <h3>Visao geral real</h3>
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
                 <div className="card" style={{ padding: 16, minWidth: 140 }}>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    CONTAS LICENCIADAS
-                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>CONTAS LICENCIADAS</div>
                   <div style={{ fontSize: 28 }}>{licenciados.length}</div>
                 </div>
                 <div className="card" style={{ padding: 16, minWidth: 140 }}>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    ATIVAS (30d)
-                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>ATIVAS (30d)</div>
                   <div style={{ fontSize: 28 }}>{contagem.ativo}</div>
                 </div>
                 <div className="card" style={{ padding: 16, minWidth: 140 }}>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    OCIOSAS (31-90d)
-                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>OCIOSAS (31-90d)</div>
                   <div style={{ fontSize: 28 }}>{contagem.ocioso}</div>
                 </div>
                 <div className="card" style={{ padding: 16, minWidth: 140 }}>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    INATIVAS (90d+)
-                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>INATIVAS (90d+)</div>
                   <div style={{ fontSize: 28 }}>{contagem.inativo + contagem.nunca}</div>
                 </div>
                 <div className="card" style={{ padding: 16, minWidth: 140 }}>
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    SEM MFA
-                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>SEM MFA</div>
                   <div style={{ fontSize: 28 }}>{semMfa === null ? '—' : semMfa}</div>
                 </div>
               </div>
@@ -157,7 +217,10 @@ export function LicencasReais() {
               <tbody>
                 {dados.licencas.map((sku) => (
                   <tr key={sku.skuId}>
-                    <td>{sku.skuPartNumber}</td>
+                    <td>
+                      {sku.nome}
+                      <div className="muted" style={{ fontSize: 11 }}>{sku.skuPartNumber}</div>
+                    </td>
                     <td style={{ textAlign: 'center' }}>{sku.comprados}</td>
                     <td style={{ textAlign: 'center' }}>{sku.emUso}</td>
                     <td style={{ textAlign: 'center' }}>{sku.livres}</td>
@@ -170,7 +233,7 @@ export function LicencasReais() {
           {usuarios ? (
             <section style={{ marginTop: 24 }}>
               <h3>Usuarios reais ({usuarios.length})</h3>
-              <div style={{ maxHeight: 360, overflow: 'auto', marginTop: 12 }}>
+              <div style={{ maxHeight: 420, overflow: 'auto', marginTop: 12 }}>
                 <table style={{ width: '100%' }}>
                   <thead>
                     <tr>
@@ -178,7 +241,7 @@ export function LicencasReais() {
                       <th style={{ textAlign: 'left' }}>UPN</th>
                       <th>Habilitada</th>
                       <th>Ultimo acesso</th>
-                      <th>Licencas</th>
+                      <th style={{ textAlign: 'left' }}>Licencas</th>
                       <th>MFA</th>
                     </tr>
                   </thead>
@@ -193,7 +256,7 @@ export function LicencasReais() {
                           <td style={{ textAlign: 'center' }}>
                             {u.diasUltimoAcesso === null ? 'nunca' : u.diasUltimoAcesso + 'd'}
                           </td>
-                          <td style={{ textAlign: 'center' }}>{u.totalLicencas}</td>
+                          <td style={{ fontSize: 12 }}>{nomesLicencasDoUsuario(u)}</td>
                           <td style={{ textAlign: 'center' }}>
                             {mfaConta === undefined ? '—' : mfaConta ? 'sim' : 'nao'}
                           </td>
@@ -204,7 +267,7 @@ export function LicencasReais() {
                 </table>
               </div>
             </section>
-          ) : dados.erroUsuarios ? null : null}
+          ) : null}
 
           <section style={{ marginTop: 24 }}>
             <h3>Armazenamento real (OneDrive)</h3>
