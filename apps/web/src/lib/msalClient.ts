@@ -7,7 +7,7 @@ export const msalInstance = new PublicClientApplication({
   auth: {
     clientId: MSAL_CLIENT_ID,
     authority: 'https://login.microsoftonline.com/' + MSAL_TENANT_ID,
-    redirectUri: '/login',
+    redirectUri: window.location.origin + import.meta.env.BASE_URL + 'login',
   },
   cache: {
     cacheLocation: 'localStorage',
