@@ -15,7 +15,7 @@ import estilos from './Layout.module.css'
 const PAINEL = [
   { para: '/visao-geral', rotulo: 'Visão geral', Icone: IconeVisaoGeral },
   { para: '/usuarios', rotulo: 'Usuários', Icone: IconeUsuarios },
-  { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas },
+  { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas }, { para: '/licencas-reais', rotulo: 'Licenças (real)', Icone: IconeLicencas },
   { para: '/armazenamento', rotulo: 'Armazenamento', Icone: IconeArmazenamento },
 ]
 
