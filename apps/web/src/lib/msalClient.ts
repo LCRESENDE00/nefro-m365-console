@@ -1,7 +1,7 @@
 import { PublicClientApplication } from '@azure/msal-browser'
 
-export const MSAL_CLIENT_ID = 'b83c7794-ddee-4018-a079-6b290f044d3b'
-export const MSAL_TENANT_ID = '00714dc9-4ce9-4734-948f-aa1af877a01'
+export const MSAL_CLIENT_ID = import.meta.env.VITE_MSAL_CLIENT_ID ?? ''
+export const MSAL_TENANT_ID = import.meta.env.VITE_MSAL_TENANT_ID ?? ''
 
 export const msalInstance = new PublicClientApplication({
   auth: {
@@ -24,7 +24,7 @@ export function garantirMsalInicializado() {
 }
 
 export async function entrarELerLicencasReais() {
-  await garantirMsalInicializado()
+  if (!MSAL_CLIENT_ID || !MSAL_TENANT_ID) { throw new Error('Configuracao ausente: defina VITE_MSAL_CLIENT_ID e VITE_MSAL_TENANT_ID (veja apps/web/.env.example e docs/entra-id-setup.md).') } await garantirMsalInicializado()
 
 const resultado = await msalInstance.loginPopup({
   scopes: ['Organization.Read.All'],
