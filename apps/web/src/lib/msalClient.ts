@@ -14,7 +14,7 @@ export const msalInstance = new PublicClientApplication({
   },
 })
 
-let inicializado = null
+let inicializado: Promise<void> | null = null
 
 export function garantirMsalInicializado() {
   if (!inicializado) {
@@ -40,7 +40,7 @@ if (!resposta.ok) {
 
 const dados = await resposta.json()
 
-const skus = (dados.value ?? []).map(function (sku) {
+const skus = (dados.value ?? []).map(function (sku: any) {
   return {
     skuId: sku.skuId,
     skuPartNumber: sku.skuPartNumber,
