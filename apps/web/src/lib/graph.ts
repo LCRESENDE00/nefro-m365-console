@@ -154,7 +154,15 @@ function analisarCsv(texto: string): Array<Record<string, string>> {
 }
 
 export async function lerArmazenamento(): Promise<ContaArmazenamento[]> {
-  const resposta = await chamarGraph("/reports/getOneDriveUsageAccountDetail(period='D7')", 'text/csv')
+  let resposta: Response
+  try {
+    resposta = await chamarGraph("/reports/getOneDriveUsageAccountDetail(period='D7')", 'text/csv')
+  } catch {
+    throw new Error(
+      'A Microsoft bloqueia esse relatorio quando chamado direto do navegador (o link de download nao libera CORS). ' +
+        'So funciona com um servidor por tras (backend) buscando esse dado, nao rodando so no site estatico.',
+    )
+  }
   const texto = await resposta.text()
   const linhas = analisarCsv(texto)
   return linhas
