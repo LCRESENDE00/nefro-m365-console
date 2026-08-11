@@ -3,6 +3,8 @@ import { IconeExportar } from '../../components/icones'
 import { useToast } from '../../components/Toast'
 import { baixar } from '../../lib/baixar'
 import {
+  criarUsuario,
+  gerarSenhaTemporaria,
   lerArmazenamento,
   lerContaConectada,
   lerLicencas,
@@ -48,6 +50,14 @@ export function LicencasReais() {
   const [erro, setErro] = useState<string | null>(null)
   const [dados, setDados] = useState<Resultado | null>(null)
 
+  const [formAberto, setFormAberto] = useState(false)
+  const [nomeNovo, setNomeNovo] = useState('')
+  const [upnNovo, setUpnNovo] = useState('')
+  const [confirmando, setConfirmando] = useState(false)
+  const [criando, setCriando] = useState(false)
+  const [erroCriar, setErroCriar] = useState<string | null>(null)
+  const [criado, setCriado] = useState<{ upn: string; senha: string } | null>(null)
+
   function conectar() {
     setCarregando(true)
     setErro(null)
@@ -77,6 +87,41 @@ export function LicencasReais() {
     })()
       .catch((e) => setErro(e && e.message ? e.message : 'Nao foi possivel conectar com a Microsoft.'))
       .finally(() => setCarregando(false))
+  }
+
+  async function recarregarUsuarios() {
+    try {
+      const usuariosNovos = await lerUsuarios()
+      setDados((atual) => (atual ? { ...atual, usuarios: usuariosNovos, erroUsuarios: null } : atual))
+    } catch {
+      // se falhar, mantem a lista antiga; a conta ja foi criada de verdade no Microsoft 365
+    }
+  }
+
+  async function confirmarCriacao() {
+    setCriando(true)
+    setErroCriar(null)
+    try {
+      const senha = gerarSenhaTemporaria()
+      await criarUsuario({ nome: nomeNovo.trim(), upn: upnNovo.trim(), senha })
+      setCriado({ upn: upnNovo.trim(), senha })
+      setConfirmando(false)
+      toast('Conta criada no Microsoft 365: ' + upnNovo.trim())
+      await recarregarUsuarios()
+    } catch (e: any) {
+      setErroCriar(e && e.message ? e.message : 'Nao foi possivel criar a conta.')
+    } finally {
+      setCriando(false)
+    }
+  }
+
+  function fecharFormulario() {
+    setFormAberto(false)
+    setConfirmando(false)
+    setNomeNovo('')
+    setUpnNovo('')
+    setErroCriar(null)
+    setCriado(null)
   }
 
   const usuarios = dados?.usuarios ?? null
@@ -148,7 +193,8 @@ export function LicencasReais() {
     <div className="card" style={{ padding: 24 }}>
       <h2>Painel real do tenant</h2>
       <p className="muted" style={{ fontSize: 13 }}>
-        Login real com a Microsoft, sem simulacao. Leitura direta da Microsoft Graph. Somente leitura.
+        Login real com a Microsoft, sem simulacao. Leitura direta da Microsoft Graph. Somente leitura, exceto a
+        criacao de usuarios abaixo, que grava de verdade no tenant.
       </p>
 
       {!dados ? (
@@ -167,11 +213,100 @@ export function LicencasReais() {
                 Logado como <b>{dados.nome}</b>
               </p>
             ) : <span />}
-            <button className="btn" onClick={exportarPlanilha}>
-              <IconeExportar />
-              Exportar planilha (CSV)
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" onClick={() => setFormAberto(true)}>
+                + Criar usuario
+              </button>
+              <button className="btn" onClick={exportarPlanilha}>
+                <IconeExportar />
+                Exportar planilha (CSV)
+              </button>
+            </div>
           </div>
+
+          {formAberto ? (
+            <section className="card" style={{ marginTop: 16, padding: 16, border: '1px solid var(--linha)' }}>
+              <h3>Criar usuario real no Microsoft 365</h3>
+              <p className="muted" style={{ fontSize: 12 }}>
+                Isso cria uma conta de verdade no tenant via Microsoft Graph (nao e simulacao). So funciona se a
+                sua conta tiver papel de administrador (Administrador de Usuarios ou Global).
+              </p>
+
+              {criado ? (
+                <div style={{ marginTop: 12 }}>
+                  <p style={{ color: 'var(--verde, #4ade80)' }}>Conta criada com sucesso!</p>
+                  <p>
+                    UPN: <b>{criado.upn}</b>
+                  </p>
+                  <p>
+                    Senha temporaria: <b style={{ fontFamily: 'monospace' }}>{criado.senha}</b>
+                  </p>
+                  <p className="muted" style={{ fontSize: 12 }}>
+                    Copie essa senha agora e envie para a pessoa com seguranca: ela nao aparece novamente aqui. A
+                    conta ja esta configurada para exigir troca de senha no primeiro login.
+                  </p>
+                  <button className="btn" onClick={fecharFormulario} style={{ marginTop: 8 }}>
+                    Fechar
+                  </button>
+                </div>
+              ) : (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 420 }}>
+                  <label>
+                    Nome completo
+                    <input
+                      className="input"
+                      style={{ width: '100%', marginTop: 4 }}
+                      value={nomeNovo}
+                      onChange={(e) => setNomeNovo(e.target.value)}
+                      placeholder="Ex.: Maria Souza"
+                    />
+                  </label>
+                  <label>
+                    E-mail / UPN completo
+                    <input
+                      className="input"
+                      style={{ width: '100%', marginTop: 4 }}
+                      value={upnNovo}
+                      onChange={(e) => setUpnNovo(e.target.value)}
+                      placeholder="Ex.: maria.souza@nefroclinicas.com.br"
+                    />
+                  </label>
+
+                  {erroCriar ? <p style={{ color: 'var(--rose)' }}>{erroCriar}</p> : null}
+
+                  {!confirmando ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-primary"
+                        disabled={!nomeNovo.trim() || !upnNovo.trim().includes('@')}
+                        onClick={() => setConfirmando(true)}
+                      >
+                        Continuar
+                      </button>
+                      <button className="btn" onClick={fecharFormulario}>
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ background: 'rgba(244,63,94,0.1)', padding: 12, borderRadius: 8 }}>
+                      <p>
+                        Confirma a criacao da conta real <b>{upnNovo.trim()}</b> no Microsoft 365 de vocês? Essa
+                        acao grava no tenant de verdade e nao tem um botao de "desfazer" automatico.
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                        <button className="btn btn-primary" onClick={confirmarCriacao} disabled={criando}>
+                          {criando ? 'Criando...' : 'Sim, criar agora'}
+                        </button>
+                        <button className="btn" onClick={() => setConfirmando(false)} disabled={criando}>
+                          Voltar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          ) : null}
 
           {licenciados ? (
             <section style={{ marginTop: 24 }}>

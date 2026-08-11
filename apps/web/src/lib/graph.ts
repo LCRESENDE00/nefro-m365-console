@@ -4,6 +4,7 @@ import { garantirMsalInicializado, msalInstance } from './msalClient'
 export const ESCOPOS_REAIS = [
   'Organization.Read.All',
   'User.Read.All',
+  'User.ReadWrite.All',
   'AuditLog.Read.All',
   'Reports.Read.All',
 ]
@@ -34,6 +35,32 @@ async function chamarGraph(caminho: string, aceitar?: string): Promise<Response>
   if (!resposta.ok) {
     const corpo = await resposta.text().catch(() => '')
     throw new Error('Microsoft Graph respondeu ' + resposta.status + ' em ' + caminho + (corpo ? ': ' + corpo.slice(0, 200) : ''))
+  }
+  return resposta
+}
+
+/** Chamada de escrita (POST/PATCH/DELETE) na Microsoft Graph, com o token real do usuario logado. */
+async function chamarGraphEscrita(caminho: string, metodo: 'POST' | 'PATCH' | 'DELETE', corpo?: unknown): Promise<Response> {
+  const token = await tokenReal()
+  const cabecalhos: Record<string, string> = {
+    Authorization: 'Bearer ' + token,
+    'Content-Type': 'application/json',
+  }
+  const resposta = await fetch('https://graph.microsoft.com/v1.0' + caminho, {
+    method: metodo,
+    headers: cabecalhos,
+    body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
+  })
+  if (!resposta.ok) {
+    const texto = await resposta.text().catch(() => '')
+    let mensagem = texto
+    try {
+      const json = JSON.parse(texto)
+      mensagem = json?.error?.message ?? texto
+    } catch {
+      // corpo nao era JSON, usa o texto puro
+    }
+    throw new Error('Microsoft Graph respondeu ' + resposta.status + ' em ' + caminho + (mensagem ? ': ' + mensagem.slice(0, 300) : ''))
   }
   return resposta
 }
@@ -222,4 +249,45 @@ export async function lerArmazenamento(): Promise<ContaArmazenamento[]> {
       return { upn, nome, gb: bytes / 1024 ** 3 }
     })
     .filter((c) => c.upn)
+}
+
+/** Gera uma senha temporaria forte (letras maiusculas/minusculas, numeros e simbolo). */
+export function gerarSenhaTemporaria(): string {
+  const maiusculas = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const minusculas = 'abcdefghijkmnopqrstuvwxyz'
+  const numeros = '23456789'
+  const simbolos = '!@#$%*?'
+  function aleatorio(conjunto: string): string {
+    return conjunto[Math.floor(Math.random() * conjunto.length)]
+  }
+  let senha = aleatorio(maiusculas) + aleatorio(minusculas) + aleatorio(numeros) + aleatorio(simbolos)
+  const todos = maiusculas + minusculas + numeros + simbolos
+  for (let i = 0; i < 8; i++) senha += aleatorio(todos)
+  return senha
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('')
+}
+
+export type NovoUsuario = {
+  nome: string
+  upn: string
+  senha: string
+}
+
+/** Cria um usuario de verdade no tenant via Microsoft Graph (POST /users). Acao real e irreversivel por aqui. */
+export async function criarUsuario(dados: NovoUsuario): Promise<{ id: string }> {
+  const apelido = dados.upn.split('@')[0].replace(/[^a-zA-Z0-9.\-_]/g, '')
+  const resposta = await chamarGraphEscrita('/users', 'POST', {
+    accountEnabled: true,
+    displayName: dados.nome,
+    mailNickname: apelido,
+    userPrincipalName: dados.upn,
+    passwordProfile: {
+      forceChangePasswordNextSignIn: true,
+      password: dados.senha,
+    },
+  })
+  const criado = await resposta.json()
+  return { id: criado.id }
 }
