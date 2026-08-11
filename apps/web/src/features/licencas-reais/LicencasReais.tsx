@@ -3,8 +3,8 @@ import { entrarELerLicencasReais } from '../../lib/msalClient'
 
 export function LicencasReais() {
   const [carregando, setCarregando] = useState(false)
-  const [erro, setErro] = useState(null)
-  const [dados, setDados] = useState(null)
+  const [erro, setErro] = useState<string | null>(null)
+  const [dados, setDados] = useState<any>(null)
 
 function conectar() {
   setCarregando(true)
@@ -21,7 +21,7 @@ function conectar() {
   })
 }
 
-var linhas = dados ? dados.skus.map(function (sku) {
+var linhas = dados ? dados.skus.map(function (sku: any) {
   return h('tr', { key: sku.skuId },
            h('td', null, sku.skuPartNumber),
            h('td', { style: { textAlign: 'center' } }, sku.comprados),
