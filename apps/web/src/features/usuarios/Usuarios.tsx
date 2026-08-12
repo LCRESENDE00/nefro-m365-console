@@ -74,7 +74,7 @@ export function Usuarios() {
       .filter((u) => status === 'todos' || diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) === status)
  .filter((u) => unidade === 'todas' || (u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida') === unidade)
  .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : tipoConta === 'compartilhada' ? u.provavelCaixaCompartilhada : (!u.externo && !u.provavelCaixaCompartilhada)))
- .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : !u.externo))
+ .filter((u) => tipoLicenca === 'todas' || u.skuIds.some((id) => dr.nomesPorSkuId.get(id) === tipoLicenca))
       .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
   }, [usuarios, busca, status, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId])
 
