@@ -3,13 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
 import { useSubtitulo } from '../../layout/pagina'
 import { diasParaStatus, useDadosReais } from '../../lib/dadosReais'
-import { BADGE, iniciais, quando } from '../../lib/formato'
+import { BADGE, iniciais, nomeTitulo, quando } from '../../lib/formato'
 
-function nomeTitulo(nome: string): string {
- return nome.toLowerCase().split(' ').map((p: string) => (p.length ? p[0].toUpperCase() + p.slice(1) : p)).join(' ')
-}
 function dataCurta(iso: string | null): string {
- if (!iso) return 'Nunca acessou'
+if (!iso) return 'Nunca acessou'
 return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 export function VisaoGeral() {
@@ -30,6 +27,31 @@ export function VisaoGeral() {
   }, [licenciados, dr.limiarOcioso, dr.limiarInativo])
 
   const semMfa = licenciados ? licenciados.filter((u) => dr.mapaMfa.get(u.upn.toLowerCase()) === false).length : null
+
+ const licencasOrdenadas = useMemo(() => [...dr.licencas].sort((a, b) => b.emUso - a.emUso), [dr.licencas])
+
+ const departamentosPorSku = useMemo(() => {
+  const mapa = new Map()
+  for (const u of usuarios ?? []) {
+   const unidade = u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida'
+   for (const skuId of u.skuIds) {
+    if (!mapa.has(skuId)) mapa.set(skuId, new Map())
+    const porUnidade = mapa.get(skuId)
+    porUnidade.set(unidade, (porUnidade.get(unidade) ?? 0) + 1)
+   }
+  }
+  return mapa
+ }, [usuarios])
+
+ function tooltipUnidades(skuId: string): string {
+  const porUnidade = departamentosPorSku.get(skuId)
+  if (!porUnidade || porUnidade.size === 0) return 'sem contas com essa licenca'
+  return [...porUnidade.entries()]
+  .sort((a, b) => b[1] - a[1])
+  .map(([unidade, qtd]) => `${unidade}: ${qtd}`)
+  .join('\n')
+ }
+ 
 
 
   const revisaoPorUnidade = useMemo(() => {
@@ -109,22 +131,22 @@ useSubtitulo(
               {dr.licencas.length} planos
             </span>
           </div>
-          {dr.licencas.map((sku) => (
-            <div className="srow" key={sku.skuId}>
-              <div className="nm">{sku.nome}</div>
-              <div className="bar">
+         {licencasOrdenadas.map((sku) => (
+            <div className="srow" key={sku.skuId} title={tooltipUnidades(sku.skuId)}>
+<div className="nm">{nomeTitulo(sku.nome)}</div>
+            <div className="bar">
                 <i style={{ width: `${(sku.emUso / maiorLicenca) * 100}%`, background: 'var(--accent)' }} />
               </div>
               <div className="gb">
-                {sku.emUso}/{sku.comprados}
+               {sku.provavelAutosservico ? `${sku.emUso} em uso (gratuita)` : `${sku.emUso}/${sku.comprados}`}
               </div>
             </div>
           ))}
         </div>
-
-        <div className="card">
-          <div className="card-h">
-            <h3>Precisam de revisão</h3>
+       
+             <div className="card">
+                     <div className="card-h">
+                          <h3>Precisam de revisão</h3>
  <span className="muted" style={{ fontSize: 12, marginLeft: 'auto', marginRight: 10 }} title={totalPendentes + ' conta(s) ao todo'}>{totalPendentes} no total</span>
             <button className="act" onClick={() => navegar('/usuarios')}>
               Ver todos
