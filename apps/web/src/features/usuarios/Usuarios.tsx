@@ -165,15 +165,15 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
         </div>
       </div>
 <div className={estilos.toolbar}>
-<select className="input" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
+<select className="sel" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
 <option value="todas">Todas as unidades</option>
 {unidadesDisponiveis.map((un) => (<option key={un} value={un}>{un}</option>))}
 </select>
-<select className="input" value={tipoLicenca} onChange={(e) => setTipoLicenca(e.target.value)}>
+<select className="sel" value={tipoLicenca} onChange={(e) => setTipoLicenca(e.target.value)}>
 <option value="todas">Todos os tipos de licença</option>
 {licencasDisponiveis.map((l) => (<option key={l} value={l}>{l}</option>))}
 </select>
-<select className="input" value={tipoConta} onChange={(e) => setTipoConta(e.target.value)}>
+<select className="sel" value={tipoConta} onChange={(e) => setTipoConta(e.target.value)}>
 <option value="todas">Internos e externos</option>
 <option value="interno">Somente internos</option>
 <option value="externo">Somente externos (convidados)</option>
