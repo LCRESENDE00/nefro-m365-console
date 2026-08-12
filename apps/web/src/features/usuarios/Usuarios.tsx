@@ -4,7 +4,7 @@ import { IconeBusca, IconeChave, IconeInativar, IconeLixeira, IconeNovaConta } f
 import { useToast } from '../../components/Toast'
 import { useSubtitulo } from '../../layout/pagina'
 import { diasParaStatus, useDadosReais, type StatusReal } from '../../lib/dadosReais'
-import { BADGE, iniciais, quando } from '../../lib/formato'
+import { BADGE, iniciais, nomeTitulo, quando } from '../../lib/formato'
 import { gerarSenhaTemporaria, type UsuarioReal } from '../../lib/graph'
 import estilos from './Usuarios.module.css'
 
@@ -73,7 +73,7 @@ export function Usuarios() {
       .filter((u) => !termo || u.nome.toLowerCase().includes(termo) || u.upn.toLowerCase().includes(termo))
       .filter((u) => status === 'todos' || diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) === status)
  .filter((u) => unidade === 'todas' || (u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida') === unidade)
- .filter((u) => tipoLicenca === 'todas' || u.skuIds.some((id) => dr.nomesPorSkuId.get(id) === tipoLicenca))
+ .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : tipoConta === 'compartilhada' ? u.provavelCaixaCompartilhada : (!u.externo && !u.provavelCaixaCompartilhada)))
  .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : !u.externo))
       .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
   }, [usuarios, busca, status, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId])
@@ -106,7 +106,7 @@ export function Usuarios() {
     setAcaoSenha((a) => (a ? { ...a, executando: true, erro: null } : a))
     try {
       const senha = await dr.redefinirSenha(acaoSenha.usuario.id)
-      toast('Senha redefinida para ' + acaoSenha.usuario.nome)
+      toast('Senha redefinida para ' + nomeTitulo(acaoSenha.usuario.nome))
       setAcaoSenha((a) => (a ? { ...a, executando: false, senha } : a))
     } catch (e: any) {
       setAcaoSenha((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : 'Não foi possível redefinir a senha.' } : a))
@@ -118,7 +118,7 @@ export function Usuarios() {
     setAcaoSituacao((a) => (a ? { ...a, executando: true, erro: null } : a))
     try {
       await dr.alternarSituacao(acaoSituacao.usuario.id, acaoSituacao.habilitarPara)
-      toast(`Conta de ${acaoSituacao.usuario.nome} ${acaoSituacao.habilitarPara ? 'reativada' : 'desativada'}`)
+      toast(`Conta de ${nomeTitulo(acaoSituacao.usuario.nome)} ${acaoSituacao.habilitarPara ? 'reativada' : 'desativada'}`)
       setAcaoSituacao(null)
     } catch (e: any) {
       setAcaoSituacao((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : 'Não foi possível alterar a conta.' } : a))
@@ -129,7 +129,7 @@ if (!acaoLicencas) return
 setAcaoLicencas((a) => (a ? { ...a, executando: true, erro: null } : a))
 try {
 await dr.removerLicencas(acaoLicencas.usuario.id, acaoLicencas.usuario.skuIds)
-toast("Todas as licenças de " + acaoLicencas.usuario.nome + " foram removidas")
+toast("Todas as licenças de " + nomeTitulo(acaoLicencas.usuario.nome) + " foram removidas")
 setAcaoLicencas((a) => (a ? { ...a, executando: false, removidas: true } : a))
 } catch (e: any) {
 setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : "Não foi possível remover as licenças." } : a))
@@ -177,6 +177,7 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
 <option value="todas">Internos e externos</option>
 <option value="interno">Somente internos</option>
 <option value="externo">Somente externos (convidados)</option>
+  <option value="compartilhada">Provável caixa compartilhada</option>
 </select>
 </div>
 
@@ -297,9 +298,9 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
                       <tr key={u.id}>
                         <td>
                           <div className="person">
-                            <div className="av">{iniciais(u.nome)}</div>
+                            <div className="av">{iniciais(nomeTitulo(u.nome))}</div>
                             <div>
-                              <b>{u.nome}</b>
+                              <b>{nomeTitulo(u.nome)}</b>
                               <span>{u.upn}</span>
                             </div>
                           </div>
@@ -365,7 +366,7 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
       {acaoSenha && (
         <div style={OVERLAY} onClick={() => !acaoSenha.executando && setAcaoSenha(null)}>
           <div className="card" style={{ padding: 20, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-            <h3>Redefinir senha de {acaoSenha.usuario.nome}</h3>
+            <h3>Redefinir senha de {nomeTitulo(acaoSenha.usuario.nome)}</h3>
             {acaoSenha.senha ? (
               <>
                 <p style={{ marginTop: 10 }}>
@@ -404,7 +405,7 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
         <div style={OVERLAY} onClick={() => !acaoSituacao.executando && setAcaoSituacao(null)}>
           <div className="card" style={{ padding: 20, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
             <h3>
-              {acaoSituacao.habilitarPara ? 'Reativar' : 'Desativar'} conta de {acaoSituacao.usuario.nome}
+              {acaoSituacao.habilitarPara ? 'Reativar' : 'Desativar'} conta de {nomeTitulo(acaoSituacao.usuario.nome)}
             </h3>
             <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>
               Isso {acaoSituacao.habilitarPara ? 'reativa' : 'desativa'} de verdade a conta{' '}
@@ -426,7 +427,7 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
 {acaoLicencas && (
 <div style={OVERLAY} onClick={() => !acaoLicencas.executando && setAcaoLicencas(null)}>
 <div className="card" style={{ padding: 20, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-<h3>Remover licenças de {acaoLicencas.usuario.nome}</h3>
+<h3>Remover licenças de {nomeTitulo(acaoLicencas.usuario.nome)}</h3>
 {acaoLicencas.removidas ? (
 <>
 <p style={{ marginTop: 10, color: "var(--verde, #4ade80)" }}>Todas as licenças foram removidas com sucesso.</p>
