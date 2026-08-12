@@ -168,6 +168,7 @@ export type UsuarioReal = {
   totalLicencas: number
  departamento: string | null
  externo: boolean
+  provavelCaixaCompartilhada: boolean
 }
 
 export async function lerUsuarios(): Promise<UsuarioReal[]> {
@@ -191,6 +192,7 @@ export async function lerUsuarios(): Promise<UsuarioReal[]> {
       totalLicencas: skuIds.length,
  departamento: u.department ?? null,
  externo: u.userType === 'Guest',
+      provavelCaixaCompartilhada: skuIds.length === 0 && dias === null && u.userType !== 'Guest',
     }
   })
 }
