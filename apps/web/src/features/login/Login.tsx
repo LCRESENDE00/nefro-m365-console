@@ -29,10 +29,14 @@ export function Login() {
     <section className={estilos.login}>
       <div className={estilos.pitch}>
         <div className={estilos.brand}>
-          <div className={estilos.mark}>N</div>
-          <div>
+          <img
+            className={estilos.logo}
+            src={`${import.meta.env.BASE_URL}logo-nefroclinicas.png`}
+            alt="Nefroclínicas"
+          />
+          <div className={estilos.produto}>
             <b>Console M365</b>
-            <small>NEFROCLÍNICAS · TI</small>
+            <small>TI · LICENÇAS</small>
           </div>
         </div>
 

@@ -34,7 +34,11 @@ export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null })
   return (
     <aside className={estilos.side}>
       <div className={estilos.brand}>
-        <div className={estilos.mark}>N</div>
+        <img
+          className={estilos.mark}
+          src={`${import.meta.env.BASE_URL}simbolo-nefroclinicas.png`}
+          alt="Nefroclínicas"
+        />
         <div>
           <b>Console M365</b>
           <small>NEFROCLÍNICAS</small>

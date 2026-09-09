@@ -18,6 +18,8 @@
   --teal-soft: rgba(63, 191, 168, 0.14);
   --amber: #e0a44a;
   --amber-soft: rgba(224, 164, 74, 0.14);
+  /* Simbolo da Nefroclinicas usado como marca d'agua (arquivo em public/). */
+  --marca-fundo: url('/simbolo-nefroclinicas.png');
   --rose: #f2657a;
   --rose-soft: rgba(242, 101, 122, 0.14);
   --r-sm: 8px;

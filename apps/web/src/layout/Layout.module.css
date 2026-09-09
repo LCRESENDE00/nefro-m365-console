@@ -22,16 +22,10 @@
 }
 
 .mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(150deg, var(--accent), #6f4bff);
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 15px;
-  color: #fff;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .brand b {
@@ -131,9 +125,29 @@
 
 /* ---------- main ---------- */
 .main {
+  position: relative;
   overflow: auto;
   display: flex;
   flex-direction: column;
+}
+
+/* Marca d'agua: o simbolo da Nefroclinicas bem apagado atras do conteudo. */
+.main::before {
+  content: '';
+  position: fixed;
+  right: -120px;
+  bottom: -140px;
+  width: 640px;
+  height: 640px;
+  background: var(--marca-fundo) no-repeat center / contain;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.main > * {
+  position: relative;
+  z-index: 1;
 }
 
 .topbar {
