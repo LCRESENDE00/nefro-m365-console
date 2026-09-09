@@ -1,0 +1,67 @@
+appId: com.nefroclinicas.m365console
+productName: Console M365
+copyright: Console M365
+
+# Declarado explicitamente porque o electron esta no node_modules hoisted da
+# raiz do monorepo, e o electron-builder so procura na pasta do app.
+electronVersion: 34.5.8
+
+directories:
+  output: ../../dist-desktop
+  buildResources: recursos
+
+# Com asar o app vira um arquivo so. Isso importa no alvo portable: sem asar
+# ele espalha ~70 pacotes no %TEMP% a cada execucao, e a primeira rodada pode
+# comecar antes de a extracao terminar (visto na pratica: "Cannot find module").
+#
+# Nao da para usar asarUnpack aqui: ele exige que todo arquivo esteja sob a
+# pasta do app, e as dependencias de workspace (@nefro/api) sao symlinks para
+# fora dela. Por isso o engine do Prisma vai por extraResources e o caminho e
+# informado em runtime via PRISMA_QUERY_ENGINE_LIBRARY.
+asar: true
+
+files:
+  - dist/**
+  - package.json
+  # O client gerado do Prisma mora em node_modules/.prisma e nao aparece na
+  # arvore de dependencias, entao precisa ser copiado explicitamente.
+  # O binario do engine fica de fora daqui (vai em extraResources), senao seriam
+  # 20 MB duplicados dentro e fora do asar.
+  - from: ../../node_modules/.prisma
+    to: node_modules/.prisma
+    filter: ['**/*', '!**/*.node']
+  # Nada de arquivos locais de desenvolvimento dentro do instalador.
+  - '!**/.env'
+  - '!**/.env.*'
+  - '!**/*.db'
+  - '!**/*.map'
+  - '!**/tsconfig*.json'
+
+# Arquivos que o app le em runtime e que nao fazem parte do bundle JS.
+extraResources:
+  - from: recursos/dados-template.db
+    to: dados-template.db
+  - from: ../web/dist
+    to: web
+  - from: ../../node_modules/.prisma/client/query_engine-windows.dll.node
+    to: prisma/query_engine-windows.dll.node
+
+win:
+  target:
+    # nsis = instalador com atalhos; portable = um .exe unico que roda direto.
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+portable:
+  artifactName: ConsoleM365-${version}-portatil.${ext}
+
+nsis:
+  artifactName: ConsoleM365-${version}-instalador.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Console M365
