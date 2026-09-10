@@ -45,7 +45,7 @@ type AcaoLicencas = { usuario: UsuarioReal; executando: boolean; erro: string | 
 const OVERLAY: CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(20, 22, 30, 0.45)',
+  background: 'var(--scrim)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

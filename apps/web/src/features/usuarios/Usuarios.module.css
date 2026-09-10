@@ -175,7 +175,7 @@
   padding: 13px;
   margin-top: 18px;
   font-size: 12.8px;
-  color: #5c3a08;
+  color: var(--amber-ink);
 }
 
 .rec b {
