@@ -33,6 +33,12 @@
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* Wordmark: "Nefro" no vermelho da marca, "Control" no preto do texto. */
+.brand .nefro {
+  color: var(--brand);
 }
 
 .brand small {

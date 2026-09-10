@@ -40,7 +40,7 @@ export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null })
           alt="Nefroclínicas"
         />
         <div>
-          <b>Console M365</b>
+          <b><span className={estilos.nefro}>Nefro</span>Control</b>
           <small>NEFROCLÍNICAS</small>
         </div>
       </div>
