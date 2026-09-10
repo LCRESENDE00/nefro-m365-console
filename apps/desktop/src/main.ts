@@ -61,7 +61,7 @@ async function criarJanela(url: string) {
     height: 900,
     minWidth: 960,
     minHeight: 640,
-    backgroundColor: '#0E1117',
+    backgroundColor: '#F7F7F9',
     show: false,
     title: 'Console M365',
     webPreferences: { contextIsolation: true, nodeIntegration: false },
