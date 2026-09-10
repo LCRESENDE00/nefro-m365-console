@@ -112,6 +112,19 @@ export const IconeBusca = () => (
   </svg>
 )
 
+export const IconeSol = () => (
+  <svg {...base} strokeWidth={1.8}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5" />
+  </svg>
+)
+
+export const IconeLua = () => (
+  <svg {...base} strokeWidth={1.8}>
+    <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" strokeLinejoin="round" />
+  </svg>
+)
+
 export const IconeMicrosoft = () => (
   <svg width="15" height="15" viewBox="0 0 23 23" aria-hidden="true">
     <path fill="#fff" d="M1 1h10v10H1z" opacity=".9" />
