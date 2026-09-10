@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
 import { IconeBusca, IconeChave, IconeInativar, IconeLixeira, IconeNovaConta } from '../../components/icones'
 import { useToast } from '../../components/Toast'
@@ -55,7 +56,8 @@ const OVERLAY: CSSProperties = {
 export function Usuarios() {
   const dr = useDadosReais()
   const toast = useToast()
-  const [busca, setBusca] = useState('')
+  const [parametros] = useSearchParams()
+  const [busca, setBusca] = useState(parametros.get('busca') ?? '')
   const [status, setStatus] = useState<StatusReal | 'todos'>('todos')
  const [regiao, setRegiao] = useState('todas')
  const [unidade, setUnidade] = useState('todas')
