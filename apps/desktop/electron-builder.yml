@@ -1,6 +1,6 @@
 appId: com.nefroclinicas.m365console
-productName: Console M365
-copyright: Console M365
+productName: NefroControl
+copyright: Nefroclínicas
 
 # Declarado explicitamente porque o electron esta no node_modules hoisted da
 # raiz do monorepo, e o electron-builder so procura na pasta do app.
@@ -55,13 +55,13 @@ win:
       arch: [x64]
 
 portable:
-  artifactName: ConsoleM365-${version}-portatil.${ext}
+  artifactName: NefroControl-${version}-portatil.${ext}
 
 nsis:
-  artifactName: ConsoleM365-${version}-instalador.${ext}
+  artifactName: NefroControl-${version}-instalador.${ext}
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: Console M365
+  shortcutName: NefroControl

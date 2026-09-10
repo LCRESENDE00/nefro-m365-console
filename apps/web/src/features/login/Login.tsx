@@ -35,7 +35,7 @@ export function Login() {
             alt="Nefroclínicas"
           />
           <div className={estilos.produto}>
-            <b>Console M365</b>
+            <b><span className={estilos.nefro}>Nefro</span>Control</b>
             <small>TI · LICENÇAS</small>
           </div>
         </div>

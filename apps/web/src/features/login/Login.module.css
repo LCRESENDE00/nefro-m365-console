@@ -74,11 +74,23 @@
   padding-left: 18px;
 }
 
+/* Wordmark: "Nefro" no vermelho da marca e "Control" no preto do texto; sobre o
+   painel vermelho ele vai num cartao branco, como o logo ao lado. */
 .brand b {
+  display: inline-block;
   font-family: var(--display);
   font-size: 14.5px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  color: var(--text);
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.brand .nefro {
+  color: var(--brand);
 }
 
 .brand small {

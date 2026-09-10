@@ -27,7 +27,7 @@ export function Topbar() {
   return (
     <header className={estilos.topbar}>
       <div>
-        <h1>{TITULOS[pathname] ?? 'Console M365'}</h1>
+        <h1>{TITULOS[pathname] ?? 'NefroControl'}</h1>
         <div className={estilos.sub}>{subtitulo}</div>
       </div>
 

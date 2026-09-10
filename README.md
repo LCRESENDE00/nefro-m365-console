@@ -1,4 +1,4 @@
-# Console M365 — Nefroclínicas
+# NefroControl — Nefroclínicas
 
 Painel de **licenças Microsoft 365** para TI interna: mostra quem não acessa há meses, qual
 licença está sendo paga sem uso e **quanto isso custa por mês**.
@@ -33,8 +33,8 @@ Duas formas de usar, ambas na [página de releases](https://github.com/LCRESENDE
 
 | Arquivo | O que faz |
 | --- | --- |
-| `ConsoleM365-<versão>-portatil.exe` | Baixa, dá dois cliques e abre. Não instala nada. |
-| `ConsoleM365-<versão>-instalador.exe` | Instala com atalho no menu Iniciar e na área de trabalho. |
+| `NefroControl-<versão>-portatil.exe` | Baixa, dá dois cliques e abre. Não instala nada. |
+| `NefroControl-<versão>-instalador.exe` | Instala com atalho no menu Iniciar e na área de trabalho. |
 
 Não precisa de Node, nem de banco, nem de configuração: o app carrega a API e o SQLite por dentro
 e **cria o banco já populado na primeira execução**, em `%APPDATA%\Console M365\dados.db`. Para
