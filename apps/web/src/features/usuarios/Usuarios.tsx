@@ -43,7 +43,7 @@ type AcaoLicencas = { usuario: UsuarioReal; executando: boolean; erro: string | 
 const OVERLAY: CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.55)',
+  background: 'rgba(20, 22, 30, 0.45)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -244,7 +244,7 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
                   </button>
                 </div>
               ) : (
-                <div style={{ background: 'rgba(244,63,94,0.1)', padding: 12, borderRadius: 8 }}>
+                <div style={{ background: 'var(--rose-soft)', padding: 12, borderRadius: 8 }}>
                   <p>
                     Confirma a criação da conta real <b>{novaConta.upn.trim()}</b> no Microsoft 365? Essa ação
                     grava no tenant de verdade e não tem um botão de "desfazer" automático.

@@ -151,7 +151,7 @@ export function DetalheConta({ upn, aoFechar, aoEditar }: Props) {
             </div>
             <AreaChart
               dados={conta.serieAcessos}
-              cor={conta.status === 'ativo' ? '#3FBFA8' : '#F2657A'}
+              cor={conta.status === 'ativo' ? '#137355' : '#cf3620'}
               altura={90}
             />
           </div>
