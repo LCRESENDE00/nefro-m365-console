@@ -8,6 +8,7 @@ import { useDados } from '../../lib/dados'
 import { useTema } from '../../lib/tema'
 import { useConsulta } from '../../lib/useConsulta'
 import estilos from './Configuracoes.module.css'
+import { UnidadesSetores } from './UnidadesSetores'
 
 const JANELAS_OCIOSO = [15, 30, 60]
 
@@ -18,7 +19,7 @@ export function Configuracoes() {
   const [sincronizando, setSincronizando] = useState(false)
   const { dados, carregando, erro, recarregar } = useConsulta(() => configuracoesRepo.ler(), [versao])
 
-  useSubtitulo('Conexão, permissões e preferências gravadas no banco')
+  useSubtitulo('Conexão, permissões, preferências e as listas de unidades e setores')
 
   async function salvar(mudancas: Partial<Preferencias>, mensagem: string) {
     await configuracoesRepo.salvar(mudancas)
@@ -157,6 +158,8 @@ export function Configuracoes() {
           aoAlternar={(valor) => salvar({ modoDemo: valor }, 'Preferência salva')}
         />
       </div>
+
+      <UnidadesSetores />
 
       {dados.marcadasParaRevisao.length > 0 && (
         <div className="card" style={{ marginTop: 16 }}>
