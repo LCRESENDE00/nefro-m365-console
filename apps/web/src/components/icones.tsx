@@ -28,6 +28,14 @@ export const IconeLicencas = () => (
   </svg>
 )
 
+export const IconeEconomia = () => (
+  <svg {...base}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.2v9.6" />
+    <path d="M14.6 9.6c0-1.1-1.2-1.8-2.6-1.8s-2.6.7-2.6 1.8c0 2.4 5.2 1.2 5.2 3.6 0 1.1-1.2 1.9-2.6 1.9s-2.6-.8-2.6-1.9" />
+  </svg>
+)
+
 export const IconeArmazenamento = () => (
   <svg {...base}>
     <ellipse cx="12" cy="6" rx="8" ry="3" />

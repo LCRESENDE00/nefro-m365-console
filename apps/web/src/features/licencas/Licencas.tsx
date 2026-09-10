@@ -4,18 +4,9 @@ import { useToast } from '../../components/Toast'
 import { IconeExportar } from '../../components/icones'
 import { useSubtitulo } from '../../layout/pagina'
 import { baixar } from '../../lib/baixar'
+import { blobCsv } from '../../lib/csv'
 import { useDadosReais } from '../../lib/dadosReais'
 import estilos from './Licencas.module.css'
-
-function celulaCsv(valor: string | number): string {
-  const texto = String(valor ?? '')
-  if (/[",\n;]/.test(texto)) return '"' + texto.replace(/"/g, '""') + '"'
-  return texto
-}
-
-function linhasParaCsv(linhas: (string | number)[][]): string {
-  return linhas.map((linha) => linha.map(celulaCsv).join(',')).join('\n')
-}
 
 export function Licencas() {
   const navegar = useNavigate()
@@ -50,11 +41,9 @@ export function Licencas() {
       for (const u of dr.usuarios) linhas.push([u.nome, u.upn, dr.nomesLicencasDoUsuario(u)])
     }
 
-    const csv = '\uFEFF' + linhasParaCsv(linhas)
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const agora = new Date().toISOString().slice(0, 10)
     const nome = 'licencas-m365-' + agora + '.csv'
-    baixar({ nome, conteudo: blob })
+    baixar({ nome, conteudo: blobCsv(linhas) })
     toast('Planilha gerada: ' + nome)
   }
 
@@ -127,7 +116,8 @@ export function Licencas() {
           </div>
         ))}
       </div>
-    <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>{licencasAutosservico.length > 0 ? licencasAutosservico.length + ' licença(s) gratuita(s)/autoatribuída(s) (testes e planos viral) foram excluídas dos totais acima porque a Microsoft libera uma cota enorme de vagas para elas, o que distorceria os números. ' : ''}O Microsoft Graph não informa o valor pago por licença — não dá pra trazer custo aqui sem acesso ao faturamento do Microsoft 365, que não está liberado com as permissões atuais.</p>
+    <p className="muted" style={{ fontSize: 12, marginTop: 16 }}>{licencasAutosservico.length > 0 ? licencasAutosservico.length + ' licença(s) gratuita(s)/autoatribuída(s) (testes e planos viral) foram excluídas dos totais acima porque a Microsoft libera uma cota enorme de vagas para elas, o que distorceria os números. ' : ''}O Microsoft Graph não informa o valor pago por licença — os valores da fatura ficam na tela{' '}
+      <button className="act" style={{ color: 'var(--accent)', padding: 0, fontSize: 'inherit' }} onClick={() => navegar('/economia')}>Economia</button>, que mostra quanto a clínica economiza removendo as licenças paradas.</p>
     </>
   )
 }

@@ -3,6 +3,7 @@ import {
   IconeAdministracao,
   IconeArmazenamento,
   IconeConfiguracoes,
+  IconeEconomia,
   IconeLicencas,
   IconeRelatorios,
   IconeUsuarios,
@@ -16,6 +17,7 @@ const PAINEL = [
   { para: '/visao-geral', rotulo: 'Visão geral', Icone: IconeVisaoGeral },
   { para: '/usuarios', rotulo: 'Usuários', Icone: IconeUsuarios },
   { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas },
+  { para: '/economia', rotulo: 'Economia', Icone: IconeEconomia },
   { para: '/armazenamento', rotulo: 'Armazenamento', Icone: IconeArmazenamento },
 ]
 
