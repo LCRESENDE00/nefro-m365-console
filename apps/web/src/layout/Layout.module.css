@@ -138,30 +138,11 @@
   flex-direction: column;
 }
 
-/* Marca d'agua: o simbolo da Nefroclinicas bem apagado atras do conteudo. */
-.main::before {
-  content: '';
-  position: fixed;
-  right: -120px;
-  bottom: -140px;
-  width: 640px;
-  height: 640px;
-  background: var(--marca-fundo) no-repeat center / contain;
-  opacity: 0.05;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.main > * {
-  position: relative;
-  z-index: 1;
-}
-
 .topbar {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--topbar-bg);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line-soft);
   padding: 16px 28px;
@@ -208,6 +189,29 @@
 .seg button.on {
   background: var(--surface-3);
   color: var(--text);
+}
+
+/* Botao sol/lua que alterna o tema; o icone acompanha a cor do texto. */
+.tema {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: 0.14s;
+}
+
+.tema:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.tema svg {
+  width: 17px;
+  height: 17px;
 }
 
 .avatar {

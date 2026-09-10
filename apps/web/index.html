@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NefroControl · Nefroclínicas</title>
     <meta name="theme-color" content="#e8412a" />
+    <script>
+      // Aplica o tema salvo antes de qualquer CSS carregar, para o modo escuro nao piscar em branco.
+      // A chave e a mesma de src/lib/tema.ts.
+      try {
+        if (localStorage.getItem('nefrocontrol:tema') === 'escuro') document.documentElement.dataset.tema = 'escuro'
+      } catch (e) {}
+    </script>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

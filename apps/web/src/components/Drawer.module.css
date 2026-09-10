@@ -1,7 +1,7 @@
 .scrim {
   position: fixed;
   inset: 0;
-  background: rgba(20, 22, 30, 0.35);
+  background: var(--scrim);
   opacity: 0;
   pointer-events: none;
   transition: 0.2s;

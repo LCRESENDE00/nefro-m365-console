@@ -5,6 +5,7 @@ import { useToast } from '../../components/Toast'
 import { SEM_BACKEND, configuracoesRepo, type Configuracoes as Preferencias } from '../../data'
 import { useSubtitulo } from '../../layout/pagina'
 import { useDados } from '../../lib/dados'
+import { useTema } from '../../lib/tema'
 import { useConsulta } from '../../lib/useConsulta'
 import estilos from './Configuracoes.module.css'
 
@@ -13,6 +14,7 @@ const JANELAS_OCIOSO = [15, 30, 60]
 export function Configuracoes() {
   const { versao, invalidar } = useDados()
   const toast = useToast()
+  const { escuro, definirTema } = useTema()
   const [sincronizando, setSincronizando] = useState(false)
   const { dados, carregando, erro, recarregar } = useConsulta(() => configuracoesRepo.ler(), [versao])
 
@@ -130,6 +132,12 @@ export function Configuracoes() {
           </select>
         </div>
 
+        <LinhaToggle
+          titulo="Modo escuro"
+          descricao="Tema escuro para o console; também dá para alternar pelo botão no topo. Fica salvo neste navegador"
+          ligado={escuro}
+          aoAlternar={(valor) => definirTema(valor ? 'escuro' : 'claro')}
+        />
         <LinhaToggle
           titulo="Atualizar ao abrir o app"
           descricao="Busca os dados automaticamente na inicialização"
