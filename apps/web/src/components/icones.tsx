@@ -90,6 +90,13 @@ export const IconeInativar = () => (
   </svg>
 )
 
+export const IconeMfa = () => (
+  <svg {...base} width="15" height="15" strokeWidth={1.8}>
+    <path d="M12 3.5 5 6v5.5c0 4.2 2.9 7.6 7 9 4.1-1.4 7-4.8 7-9V6l-7-2.5Z" />
+    <path d="m9.5 12.5 5-5M14.5 12.5l-5-5" />
+  </svg>
+)
+
 export const IconeLixeira = () => (
   <svg {...base} width="15" height="15" strokeWidth={1.8}>
     <path d="M4 6.5h16" />
