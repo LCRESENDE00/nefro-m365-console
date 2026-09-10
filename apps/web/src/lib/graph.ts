@@ -9,21 +9,35 @@ export const ESCOPOS_REAIS = [
   'Reports.Read.All',
 ]
 
-async function tokenReal(): Promise<string> {
+/**
+ * Escopos extras pedidos só quando a acao precisa deles (consentimento incremental):
+ * assim o login do dia a dia continua pedindo apenas os ESCOPOS_REAIS, e o popup de
+ * consentimento novo aparece uma unica vez, na primeira vez que a funcao e usada.
+ */
+export const ESCOPOS_GRUPOS = ['GroupMember.ReadWrite.All']
+export const ESCOPOS_PAPEIS = ['RoleManagement.ReadWrite.Directory']
+export const ESCOPOS_CONVITE = ['User.Invite.All']
+
+async function tokenReal(escoposExtras: string[] = []): Promise<string> {
   await garantirMsalInicializado()
+  const scopes = [...ESCOPOS_REAIS, ...escoposExtras]
   const contas = msalInstance.getAllAccounts()
   if (contas.length > 0) {
     try {
       const silencioso = await msalInstance.acquireTokenSilent({
-        scopes: ESCOPOS_REAIS,
+        scopes,
         account: contas[0],
       })
       return silencioso.accessToken
     } catch {
       // token expirou ou faltam escopos: cai para o popup abaixo
     }
+    if (escoposExtras.length > 0) {
+      const interativo = await msalInstance.acquireTokenPopup({ scopes, account: contas[0] })
+      return interativo.accessToken
+    }
   }
-  const resultado = await msalInstance.loginPopup({ scopes: ESCOPOS_REAIS })
+  const resultado = await msalInstance.loginPopup({ scopes })
   return resultado.accessToken
 }
 
@@ -40,8 +54,8 @@ export async function entrarComMicrosoft(): Promise<{ nome?: string; upn: string
   return { nome: conta?.name ?? conta?.username, upn: conta?.username ?? '' }
 }
 
-async function chamarGraph(caminho: string, aceitar?: string): Promise<Response> {
-  const token = await tokenReal()
+async function chamarGraph(caminho: string, aceitar?: string, escoposExtras: string[] = []): Promise<Response> {
+  const token = await tokenReal(escoposExtras)
   const cabecalhos: Record<string, string> = { Authorization: 'Bearer ' + token }
   if (aceitar) cabecalhos['Accept'] = aceitar
   const resposta = await fetch('https://graph.microsoft.com/v1.0' + caminho, { headers: cabecalhos })
@@ -53,8 +67,13 @@ async function chamarGraph(caminho: string, aceitar?: string): Promise<Response>
 }
 
 /** Chamada de escrita (POST/PATCH/DELETE) na Microsoft Graph, com o token real do usuario logado. */
-async function chamarGraphEscrita(caminho: string, metodo: 'POST' | 'PATCH' | 'DELETE', corpo?: unknown): Promise<Response> {
-  const token = await tokenReal()
+async function chamarGraphEscrita(
+  caminho: string,
+  metodo: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  corpo?: unknown,
+  escoposExtras: string[] = [],
+): Promise<Response> {
+  const token = await tokenReal(escoposExtras)
   const cabecalhos: Record<string, string> = {
     Authorization: 'Bearer ' + token,
     'Content-Type': 'application/json',
@@ -292,27 +311,197 @@ export function gerarSenhaTemporaria(): string {
     .join('')
 }
 
-export type NovoUsuario = {
+/** Dados de perfil que o centro de administracao pede em "Informacoes de perfil" (todos opcionais). */
+export type PerfilUsuario = {
+  primeiroNome?: string
+  sobrenome?: string
+  cargo?: string
+  /** Vai para `department` — na Nefroclinicas e o codigo da unidade (NCBHZ, NCSP...). */
+  departamento?: string
+  empresa?: string
+  escritorio?: string
+  telefone?: string
+  celular?: string
+  endereco?: string
+  cidade?: string
+  estado?: string
+  cep?: string
+  pais?: string
+}
+
+export type NovoUsuario = PerfilUsuario & {
   nome: string
   upn: string
   senha: string
+  /** Obriga a troca de senha no primeiro login (padrao: sim). */
+  exigirTrocaSenha?: boolean
+  /** Conta nasce habilitada (padrao: sim). */
+  habilitada?: boolean
+  /** Pais de uso (ISO 3166-1 alpha-2, ex.: BR). Obrigatorio para atribuir licenca. */
+  localUso?: string
+}
+
+/** Remove chaves vazias para nao gravar "" no Entra. */
+function semVazios(objeto: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(objeto).filter(([, valor]) => valor !== undefined && valor !== null && valor !== ''),
+  )
+}
+
+/** Converte o perfil no formato que a Graph espera (nomes de campo do recurso user). */
+function corpoPerfil(perfil: PerfilUsuario): Record<string, unknown> {
+  return semVazios({
+    givenName: perfil.primeiroNome?.trim(),
+    surname: perfil.sobrenome?.trim(),
+    jobTitle: perfil.cargo?.trim(),
+    department: perfil.departamento?.trim(),
+    companyName: perfil.empresa?.trim(),
+    officeLocation: perfil.escritorio?.trim(),
+    businessPhones: perfil.telefone?.trim() ? [perfil.telefone.trim()] : undefined,
+    mobilePhone: perfil.celular?.trim(),
+    streetAddress: perfil.endereco?.trim(),
+    city: perfil.cidade?.trim(),
+    state: perfil.estado?.trim(),
+    postalCode: perfil.cep?.trim(),
+    country: perfil.pais?.trim(),
+  })
 }
 
 /** Cria um usuario de verdade no tenant via Microsoft Graph (POST /users). Acao real e irreversivel por aqui. */
 export async function criarUsuario(dados: NovoUsuario): Promise<{ id: string }> {
   const apelido = dados.upn.split('@')[0].replace(/[^a-zA-Z0-9.\-_]/g, '')
   const resposta = await chamarGraphEscrita('/users', 'POST', {
-    accountEnabled: true,
+    accountEnabled: dados.habilitada ?? true,
     displayName: dados.nome,
     mailNickname: apelido,
     userPrincipalName: dados.upn,
+    usageLocation: dados.localUso || undefined,
     passwordProfile: {
-      forceChangePasswordNextSignIn: true,
+      forceChangePasswordNextSignIn: dados.exigirTrocaSenha ?? true,
       password: dados.senha,
     },
+    ...corpoPerfil(dados),
   })
   const criado = await resposta.json()
   return { id: criado.id }
+}
+
+/** Atualiza campos de perfil de uma conta existente (PATCH /users/{id}). */
+export async function atualizarPerfil(id: string, perfil: PerfilUsuario): Promise<void> {
+  const corpo = corpoPerfil(perfil)
+  if (Object.keys(corpo).length === 0) return
+  await chamarGraphEscrita('/users/' + id, 'PATCH', corpo)
+}
+
+/** Atribui licencas a uma conta (POST /users/{id}/assignLicense). A conta precisa ter usageLocation. */
+export async function atribuirLicencas(id: string, skuIds: string[]): Promise<void> {
+  if (skuIds.length === 0) return
+  await chamarGraphEscrita('/users/' + id + '/assignLicense', 'POST', {
+    addLicenses: skuIds.map((skuId) => ({ skuId, disabledPlans: [] })),
+    removeLicenses: [],
+  })
+}
+
+/** Define o gerente da conta (PUT /users/{id}/manager/$ref). */
+export async function definirGerente(id: string, gerenteId: string): Promise<void> {
+  await chamarGraphEscrita('/users/' + id + '/manager/$ref', 'PUT', {
+    '@odata.id': 'https://graph.microsoft.com/v1.0/users/' + gerenteId,
+  })
+}
+
+/**
+ * Atribui uma funcao administrativa (POST /roleManagement/directory/roleAssignments).
+ * Exige que quem esta logado seja Administrador global ou de funcoes com privilegios.
+ */
+export async function atribuirPapel(id: string, roleDefinitionId: string): Promise<void> {
+  await chamarGraphEscrita(
+    '/roleManagement/directory/roleAssignments',
+    'POST',
+    {
+      '@odata.type': '#microsoft.graph.unifiedRoleAssignment',
+      roleDefinitionId,
+      principalId: id,
+      directoryScopeId: '/',
+    },
+    ESCOPOS_PAPEIS,
+  )
+}
+
+export type GrupoReal = {
+  id: string
+  nome: string
+  email: string | null
+  /** M365 (Unified) ou de seguranca: da para adicionar membros pela Graph. */
+  tipo: 'm365' | 'seguranca' | 'distribuicao' | 'seguranca-email'
+  /** Listas de distribuicao e grupos de seguranca com e-mail so mudam pelo Exchange. */
+  gerenciavel: boolean
+}
+
+/** Lista os grupos do tenant (GET /groups). Pede o escopo de grupos na primeira vez. */
+export async function lerGrupos(): Promise<GrupoReal[]> {
+  const grupos: GrupoReal[] = []
+  let caminho: string | null = '/groups?$select=id,displayName,mail,mailEnabled,securityEnabled,groupTypes&$top=999'
+  while (caminho) {
+    const resposta: Response = await chamarGraph(caminho, undefined, ESCOPOS_GRUPOS)
+    const dados: any = await resposta.json()
+    for (const g of dados.value ?? []) {
+      const unificado = (g.groupTypes ?? []).includes('Unified')
+      const tipo: GrupoReal['tipo'] = unificado
+        ? 'm365'
+        : g.mailEnabled && g.securityEnabled
+          ? 'seguranca-email'
+          : g.mailEnabled
+            ? 'distribuicao'
+            : 'seguranca'
+      grupos.push({
+        id: g.id,
+        nome: g.displayName ?? g.mail ?? g.id,
+        email: g.mail ?? null,
+        tipo,
+        gerenciavel: tipo === 'm365' || tipo === 'seguranca',
+      })
+    }
+    const proximo: string | undefined = dados['@odata.nextLink']
+    caminho = proximo ? proximo.replace('https://graph.microsoft.com/v1.0', '') : null
+  }
+  return grupos.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+}
+
+/** Adiciona a conta como membro de um grupo (POST /groups/{id}/members/$ref). */
+export async function adicionarAoGrupo(grupoId: string, usuarioId: string): Promise<void> {
+  await chamarGraphEscrita(
+    '/groups/' + grupoId + '/members/$ref',
+    'POST',
+    { '@odata.id': 'https://graph.microsoft.com/v1.0/directoryObjects/' + usuarioId },
+    ESCOPOS_GRUPOS,
+  )
+}
+
+export type NovoConvidado = {
+  email: string
+  nome: string
+  mensagem?: string
+  enviarEmail: boolean
+}
+
+/** Convida uma pessoa de fora (POST /invitations): cria a conta de convidado (Guest) e manda o e-mail de convite. */
+export async function convidarExterno(dados: NovoConvidado): Promise<{ id: string; linkConvite: string }> {
+  const resposta = await chamarGraphEscrita(
+    '/invitations',
+    'POST',
+    semVazios({
+      invitedUserEmailAddress: dados.email.trim(),
+      invitedUserDisplayName: dados.nome.trim() || undefined,
+      inviteRedirectUrl: 'https://myapps.microsoft.com',
+      sendInvitationMessage: dados.enviarEmail,
+      invitedUserMessageInfo: dados.mensagem?.trim()
+        ? { customizedMessageBody: dados.mensagem.trim(), messageLanguage: 'pt-BR' }
+        : undefined,
+    }),
+    ESCOPOS_CONVITE,
+  )
+  const convite = await resposta.json()
+  return { id: convite.invitedUser?.id ?? '', linkConvite: convite.inviteRedeemUrl ?? '' }
 }
 
 /** Redefine a senha de uma conta real (PATCH /users/{id}). Gera senha temporaria com troca obrigatoria. */
