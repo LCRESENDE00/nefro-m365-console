@@ -393,6 +393,37 @@ export async function atualizarPerfil(id: string, perfil: PerfilUsuario): Promis
   await chamarGraphEscrita('/users/' + id, 'PATCH', corpo)
 }
 
+/**
+ * Dados funcionais que a Nefroclinicas guarda no Entra, nos campos "de RH" do usuario:
+ * setor -> employeeOrgData.division, CNPJ -> employeeOrgData.costCenter,
+ * matricula -> employeeId, vinculo -> employeeType, admissao -> employeeHireDate.
+ * (A unidade continua em `department`, que e o campo que alimenta os filtros de regiao.)
+ */
+export type DadosFuncionais = {
+  setor?: string
+  cnpj?: string
+  matricula?: string
+  vinculo?: string
+  /** Data no formato YYYY-MM-DD (o input type=date). */
+  dataAdmissao?: string
+}
+
+/** Grava os dados funcionais (PATCH /users/{id}). Devolve false quando nao havia nada para gravar. */
+export async function gravarDadosFuncionais(id: string, dados: DadosFuncionais): Promise<boolean> {
+  const setor = dados.setor?.trim()
+  const cnpj = dados.cnpj?.trim()
+  const corpo = semVazios({
+    employeeId: dados.matricula?.trim(),
+    employeeType: dados.vinculo?.trim(),
+    employeeHireDate: dados.dataAdmissao ? dados.dataAdmissao + 'T00:00:00Z' : undefined,
+    // A Graph pede as duas chaves juntas: a que faltar vira null.
+    employeeOrgData: setor || cnpj ? { division: setor || null, costCenter: cnpj || null } : undefined,
+  })
+  if (Object.keys(corpo).length === 0) return false
+  await chamarGraphEscrita('/users/' + id, 'PATCH', corpo)
+  return true
+}
+
 /** Atribui licencas a uma conta (POST /users/{id}/assignLicense). A conta precisa ter usageLocation. */
 export async function atribuirLicencas(id: string, skuIds: string[]): Promise<void> {
   if (skuIds.length === 0) return
