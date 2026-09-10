@@ -1,0 +1,149 @@
+.secao {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 14px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.tabela {
+  display: flex;
+  flex-direction: column;
+}
+
+.linha {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr 40px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.linha.cabecalho {
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 2px 0 6px;
+}
+
+.linha.nova {
+  border-bottom: 0;
+  padding-top: 10px;
+  grid-template-columns: 120px 1fr 1fr auto;
+}
+
+.linha input {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  width: 100%;
+  min-width: 0;
+}
+
+.linha input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.linha input[aria-invalid='true'] {
+  border-color: var(--rose);
+}
+
+.remover {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  justify-self: center;
+}
+
+.remover:hover {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+.erro {
+  font-size: 12px;
+  color: var(--rose);
+  margin: 4px 0 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px 5px 11px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.chip button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.chip button:hover {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+.novoSetor {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.novoSetor input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.novoSetor input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+}
+
+@media (max-width: 640px) {
+  .linha,
+  .linha.nova {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .linha.cabecalho {
+    display: none;
+  }
+}
