@@ -1,0 +1,633 @@
+/* Tela "Nova conta": assistente em etapas, no mesmo desenho do
+   "Adicionar um usuário" do centro de administração do Microsoft 365. */
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  padding: 0;
+}
+
+.voltar:hover {
+  color: var(--accent);
+}
+
+.assistente {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 560px;
+}
+
+/* ---------- trilha de etapas (esquerda) ---------- */
+.trilha {
+  border-right: 1px solid var(--line-soft);
+  padding: 22px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trilhaTitulo {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 14px;
+}
+
+.etapa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: left;
+  width: 100%;
+}
+
+.etapa:disabled {
+  cursor: default;
+}
+
+.etapa:not(:disabled):hover {
+  background: var(--surface-2);
+}
+
+.etapa.atual {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.etapa.feita {
+  color: var(--text);
+}
+
+.numero {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+
+.etapa.atual .numero {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.etapa.feita .numero {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.trilhaRodape {
+  margin-top: auto;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  padding-top: 16px;
+}
+
+/* ---------- conteúdo da etapa (direita) ---------- */
+.conteudo {
+  padding: 24px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.cabecalho h2 {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 4px;
+}
+
+.cabecalho p {
+  margin: 0;
+  font-size: 12.8px;
+  color: var(--muted);
+}
+
+.secao {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 14px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.campo > span {
+  font-size: 12.3px;
+  color: var(--text-2);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font-size: 13px;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+
+.campo textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.campo input[aria-invalid='true'] {
+  border-color: var(--rose);
+}
+
+.ajuda {
+  font-size: 11.8px;
+  color: var(--muted);
+}
+
+.erroCampo {
+  font-size: 11.8px;
+  color: var(--rose);
+}
+
+/* nome de usuário + domínio lado a lado */
+.upn {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.arroba {
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+/* ---------- cartões de opção (tipo de conta, senha, função) ---------- */
+.opcoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.opcao {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: 0.15s;
+}
+
+.opcao:hover {
+  border-color: var(--line-strong);
+}
+
+.opcao.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.opcao input {
+  accent-color: var(--accent);
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.opcao b {
+  display: block;
+  font-weight: 500;
+  font-size: 13.2px;
+}
+
+.opcao small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.marcas {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.marcas label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.8px;
+  color: var(--text-2);
+}
+
+.marcas input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
+/* senha manual com botão de mostrar/gerar */
+.senha {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+}
+
+.senha input {
+  font-family: var(--mono);
+}
+
+/* ---------- listas com caixa de seleção (licenças, funções, grupos) ---------- */
+.lista {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.item:last-child {
+  border-bottom: 0;
+}
+
+.item:hover {
+  background: var(--surface-2);
+}
+
+.item.desabilitado {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.item input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.item .texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.item .texto b {
+  display: block;
+  font-weight: 500;
+}
+
+.item .texto small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.8px;
+}
+
+.item .contagem {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.categoria {
+  padding: 8px 14px;
+  background: var(--surface-2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.buscaLista {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.buscaLista:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.aviso {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.alerta {
+  background: var(--rose-soft);
+  color: var(--rose);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.dobra {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 4px 0;
+}
+
+.dobra summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dobra summary::-webkit-details-marker {
+  display: none;
+}
+
+.dobra summary::after {
+  content: '+';
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+.dobra[open] summary::after {
+  content: '–';
+}
+
+.dobra > div {
+  padding: 4px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- revisão ---------- */
+.resumo {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.resumoBloco {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.resumoBloco:last-child {
+  border-bottom: 0;
+}
+
+.resumoBloco header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.resumoBloco header b {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.resumoBloco header button {
+  font-size: 12px;
+  color: var(--accent);
+  padding: 0;
+}
+
+.linha {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.linha span {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.linha b {
+  font-weight: 500;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- rodapé com os botões ---------- */
+.rodape {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 18px;
+  border-top: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+
+.rodape > div {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---------- tela final ---------- */
+.resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sucesso {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--teal-soft);
+  color: var(--teal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.selo.falha {
+  background: var(--rose-soft);
+  color: var(--rose);
+}
+
+.credencial {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r);
+  padding: 12px 14px;
+}
+
+.credencial span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.credencial code {
+  font-family: var(--mono);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.passos {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.passo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.passo:last-child {
+  border-bottom: 0;
+}
+
+.passo small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.8px;
+  overflow-wrap: anywhere;
+}
+
+.passo .ok {
+  color: var(--teal);
+}
+
+.passo .erro {
+  color: var(--rose);
+}
+
+.passo .pulado {
+  color: var(--muted);
+}
+
+@media (max-width: 860px) {
+  .assistente {
+    grid-template-columns: 1fr;
+  }
+
+  .trilha {
+    border-right: 0;
+    border-bottom: 1px solid var(--line-soft);
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+
+  .trilhaTitulo,
+  .trilhaRodape {
+    display: none;
+  }
+
+  .etapa {
+    width: auto;
+  }
+
+  .conteudo {
+    padding: 18px 16px;
+  }
+
+  .grid2,
+  .grid3,
+  .opcoes {
+    grid-template-columns: 1fr;
+  }
+
+  .upn {
+    grid-template-columns: 1fr;
+  }
+
+  .arroba {
+    display: none;
+  }
+}

@@ -7,6 +7,7 @@ import { Licencas } from './features/licencas/Licencas'
 import { Login } from './features/login/Login'
 import { SessaoProvider } from './features/login/sessao'
 import { Relatorios } from './features/relatorios/Relatorios'
+import { NovaConta } from './features/usuarios/NovaConta'
 import { Usuarios } from './features/usuarios/Usuarios'
 import { VisaoGeral } from './features/visao-geral/VisaoGeral'
 import { Layout } from './layout/Layout'
@@ -22,6 +23,7 @@ export function App() {
             <Route element={<Layout />}>
               <Route path="/visao-geral" element={<VisaoGeral />} />
               <Route path="/usuarios" element={<Usuarios />} />
+              <Route path="/usuarios/nova" element={<NovaConta />} />
               <Route path="/licencas" element={<Licencas />} />
               <Route path="/economia" element={<Economia />} />
               <Route path="/relatorios" element={<Relatorios />} />
