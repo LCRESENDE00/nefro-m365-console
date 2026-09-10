@@ -2,26 +2,33 @@
    Layout especifico de cada feature fica no CSS Module da propria feature. */
 
 :root {
-  --ink: #0b0d12;
-  --bg: #0e1117;
-  --surface: #14181f;
-  --surface-2: #1a1f28;
-  --surface-3: #212734;
-  --line: #252b37;
-  --line-soft: #1d222c;
-  --text: #e9ecf3;
-  --text-2: #b6bdcc;
-  --muted: #7c8496;
-  --accent: #5b8cff;
-  --accent-soft: rgba(91, 140, 255, 0.14);
-  --teal: #3fbfa8;
-  --teal-soft: rgba(63, 191, 168, 0.14);
-  --amber: #e0a44a;
-  --amber-soft: rgba(224, 164, 74, 0.14);
+  color-scheme: light;
+  /* Tema claro: branco com o vermelho da marca Nefroclinicas como acento. */
+  --ink: #ffffff;
+  --bg: #f7f7f9;
+  --surface: #ffffff;
+  --surface-2: #f3f3f6;
+  --surface-3: #e8e9ee;
+  --line: #e1e2e8;
+  --line-soft: #ebecf0;
+  --text: #1a1d24;
+  --text-2: #4a5061;
+  --muted: #6b7180;
+  /* --brand e o vermelho exato do logo (fundos, graficos, degrades);
+     --accent e um tom um pouco mais fechado para texto e icones sobre branco (contraste AA). */
+  --brand: #e8412a;
+  --accent: #cf3620;
+  --accent-hover: #b52d19;
+  --accent-soft: rgba(232, 65, 42, 0.08);
+  --teal: #137355;
+  --teal-soft: rgba(19, 115, 85, 0.1);
+  --verde: var(--teal);
+  --amber: #9a5c0a;
+  --amber-soft: rgba(224, 164, 74, 0.16);
   /* Simbolo da Nefroclinicas usado como marca d'agua (arquivo em public/). */
   --marca-fundo: url('/simbolo-nefroclinicas.png');
-  --rose: #f2657a;
-  --rose-soft: rgba(242, 101, 122, 0.14);
+  --rose: #b3261e;
+  --rose-soft: rgba(179, 38, 30, 0.1);
   --r-sm: 8px;
   --r: 12px;
   --sans: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -68,7 +75,7 @@ select {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #242a35;
+  background: #cfd2da;
   border-radius: 20px;
   border: 3px solid var(--bg);
 }
@@ -100,7 +107,7 @@ select {
 }
 .btn:hover {
   background: var(--surface-3);
-  border-color: #333b4a;
+  border-color: #cfd2da;
 }
 .btn:disabled {
   opacity: 0.55;
@@ -112,8 +119,8 @@ select {
   color: #fff;
 }
 .btn-primary:hover {
-  background: #4b7cf0;
-  border-color: #4b7cf0;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .btn-block {
   width: 100%;
@@ -417,7 +424,7 @@ tbody tr:last-child td {
 }
 .switch.on {
   background: var(--accent-soft);
-  border-color: rgba(91, 140, 255, 0.45);
+  border-color: rgba(232, 65, 42, 0.45);
 }
 .switch.on i {
   left: 19px;
