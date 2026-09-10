@@ -7,6 +7,8 @@ const pastaDist = __dirname
 // Fixa o nome antes de qualquer getPath: sem isso, em desenvolvimento os dados
 // iriam parar em %APPDATA%\@nefro\desktop, e so no app empacotado usariam o
 // productName. Assim as duas execucoes apontam para a mesma pasta.
+// O nome antigo fica de proposito: e ele que define a pasta em %APPDATA%, e
+// trocar faria quem ja instalou perder o banco. O nome visivel e NefroControl.
 app.setName('Console M365')
 
 /**
@@ -63,7 +65,7 @@ async function criarJanela(url: string) {
     minHeight: 640,
     backgroundColor: '#F7F7F9',
     show: false,
-    title: 'Console M365',
+    title: 'NefroControl',
     webPreferences: { contextIsolation: true, nodeIntegration: false },
   })
 
@@ -104,7 +106,7 @@ async function iniciar() {
 app.whenReady().then(() =>
   iniciar().catch((erro: Error) => {
     registrar(`FALHA: ${erro.stack ?? erro.message}`)
-    dialog.showErrorBox('Não foi possível iniciar o Console M365', erro.stack ?? erro.message)
+    dialog.showErrorBox('Não foi possível iniciar o NefroControl', erro.stack ?? erro.message)
     app.quit()
   }),
 )
