@@ -3,14 +3,17 @@
 
 :root {
   color-scheme: light;
-  /* Tema claro: branco com o vermelho da marca Nefroclinicas como acento. */
+  /* Tema claro: tudo branco, com o vermelho da marca Nefroclinicas como acento.
+     O tema escuro so redefine os tokens em :root[data-tema='escuro'] (mais abaixo);
+     a troca fica em src/lib/tema.ts. */
   --ink: #ffffff;
-  --bg: #f7f7f9;
+  --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f3f3f6;
   --surface-3: #e8e9ee;
   --line: #e1e2e8;
   --line-soft: #ebecf0;
+  --line-strong: #cfd2da;
   --text: #1a1d24;
   --text-2: #4a5061;
   --muted: #6b7180;
@@ -25,15 +28,50 @@
   --verde: var(--teal);
   --amber: #9a5c0a;
   --amber-soft: rgba(224, 164, 74, 0.16);
-  /* Simbolo da Nefroclinicas usado como marca d'agua (arquivo em public/). */
+  --amber-ink: #5c3a08;
+  /* Simbolo da Nefroclinicas usado como marca d'agua na tela de login (arquivo em public/). */
   --marca-fundo: url('/simbolo-nefroclinicas.png');
   --rose: #b3261e;
   --rose-soft: rgba(179, 38, 30, 0.1);
+  /* Camadas sobre o conteudo: barra do topo translucida, fundo de modais/drawer e sombras. */
+  --topbar-bg: rgba(255, 255, 255, 0.86);
+  --scrim: rgba(20, 22, 30, 0.4);
+  --shadow: rgba(20, 22, 30, 0.14);
   --r-sm: 8px;
   --r: 12px;
   --sans: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
   --display: 'Space Grotesk', 'Inter', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', monospace;
+}
+
+/* Tema escuro: mesmos tokens, so as cores mudam. O vermelho da marca fica igual;
+   acento, verde e ambar sobem um tom para manter contraste sobre o fundo escuro. */
+:root[data-tema='escuro'] {
+  color-scheme: dark;
+  --ink: #14161c;
+  --bg: #0f1116;
+  --surface: #171a21;
+  --surface-2: #1f232c;
+  --surface-3: #2a2f3a;
+  --line: #2e3340;
+  --line-soft: #262a34;
+  --line-strong: #3b4150;
+  --text: #eceef3;
+  --text-2: #b4bac8;
+  --muted: #8a91a3;
+  --accent: #f0654f;
+  --accent-hover: #f58572;
+  --accent-soft: rgba(232, 65, 42, 0.16);
+  --teal: #4cc39a;
+  --teal-soft: rgba(76, 195, 154, 0.14);
+  --amber: #e0a44a;
+  --amber-soft: rgba(224, 164, 74, 0.16);
+  --amber-ink: #f1d9b3;
+  --rose: #f28b83;
+  --rose-soft: rgba(242, 139, 131, 0.14);
+  --topbar-bg: rgba(15, 17, 22, 0.86);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow: rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -75,7 +113,7 @@ select {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cfd2da;
+  background: var(--line-strong);
   border-radius: 20px;
   border: 3px solid var(--bg);
 }
@@ -107,7 +145,7 @@ select {
 }
 .btn:hover {
   background: var(--surface-3);
-  border-color: #cfd2da;
+  border-color: var(--line-strong);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -146,7 +184,7 @@ select {
 }
 .card {
   background: var(--surface);
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--line);
   border-radius: var(--r);
   padding: 18px;
 }
