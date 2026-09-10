@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
 import { Administracao } from './features/administracao/Administracao'
-import { Armazenamento } from './features/armazenamento/Armazenamento'
 import { Configuracoes } from './features/configuracoes/Configuracoes'
 import { Economia } from './features/economia/Economia'
 import { Licencas } from './features/licencas/Licencas'
@@ -25,7 +24,6 @@ export function App() {
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/licencas" element={<Licencas />} />
               <Route path="/economia" element={<Economia />} />
-              <Route path="/armazenamento" element={<Armazenamento />} />
               <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/administracao" element={<Administracao />} />
               <Route path="/configuracoes" element={<Configuracoes />} />

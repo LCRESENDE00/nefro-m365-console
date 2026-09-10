@@ -22,7 +22,6 @@ React + TypeScript no front, API Express com Prisma e banco SQLite atrás.
 | **Visão geral** | Quanto se paga por mês em licença parada, distribuição por plano, série de acessos semanais, contas que precisam de revisão |
 | **Usuários** | Tabela com busca, filtro por setor e status, ordenação; painel lateral por conta com sugestão de economia |
 | **Licenças** | Assentos contratados × atribuídos × em uso, por plano, com o custo desperdiçado de cada um |
-| **Armazenamento** | Ocupação do OneDrive por conta e por setor, GB presos em contas inativas |
 | **Relatórios** | Geração de CSV a partir do banco, preferências de envio automático e histórico de exportações |
 | **Configurações** | Conexão, permissões de leitura, limiares de conta ociosa/inativa, contas marcadas para revisão |
 
