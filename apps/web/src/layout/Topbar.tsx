@@ -1,7 +1,9 @@
 import { useLocation } from 'react-router-dom'
+import { IconeLua, IconeSol } from '../components/icones'
 import { useSessao } from '../features/login/sessao'
 import { useDadosReais } from '../lib/dadosReais'
 import { iniciais } from '../lib/formato'
+import { useTema } from '../lib/tema'
 import { useSubtituloAtual } from './pagina'
 import estilos from './Layout.module.css'
 
@@ -22,6 +24,7 @@ export function Topbar() {
   const subtitulo = useSubtituloAtual()
   const { sessao } = useSessao()
   const { limiarInativo, definirLimiarInativo } = useDadosReais()
+  const { escuro, definirTema } = useTema()
   const mostrarJanela = pathname === '/visao-geral' || pathname === '/usuarios' || pathname === '/economia'
 
   return (
@@ -41,6 +44,16 @@ export function Topbar() {
             ))}
           </div>
         ) : null}
+
+        <button
+          className={estilos.tema}
+          onClick={() => definirTema(escuro ? 'claro' : 'escuro')}
+          title={escuro ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}
+          aria-label={escuro ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}
+          aria-pressed={escuro}
+        >
+          {escuro ? <IconeSol /> : <IconeLua />}
+        </button>
 
         <div className={estilos.avatar} title={sessao?.nome}>
           {sessao?.nome ? iniciais(sessao.nome) : '··'}
