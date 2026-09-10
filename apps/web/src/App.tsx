@@ -3,6 +3,7 @@ import { ToastProvider } from './components/Toast'
 import { Administracao } from './features/administracao/Administracao'
 import { Armazenamento } from './features/armazenamento/Armazenamento'
 import { Configuracoes } from './features/configuracoes/Configuracoes'
+import { Economia } from './features/economia/Economia'
 import { Licencas } from './features/licencas/Licencas'
 import { Login } from './features/login/Login'
 import { SessaoProvider } from './features/login/sessao'
@@ -23,6 +24,7 @@ export function App() {
               <Route path="/visao-geral" element={<VisaoGeral />} />
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/licencas" element={<Licencas />} />
+              <Route path="/economia" element={<Economia />} />
               <Route path="/armazenamento" element={<Armazenamento />} />
               <Route path="/relatorios" element={<Relatorios />} />
               <Route path="/administracao" element={<Administracao />} />
