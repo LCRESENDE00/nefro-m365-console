@@ -4,6 +4,7 @@ import { Carregando, Erro } from '../../components/Estado'
 import { IconeBusca, IconeChave, IconeInativar, IconeLixeira, IconeNovaConta } from '../../components/icones'
 import { useToast } from '../../components/Toast'
 import { useSubtitulo } from '../../layout/pagina'
+import { descreverUnidade, useCatalogos } from '../../lib/catalogos'
 import { diasParaStatus, useDadosReais, type StatusReal } from '../../lib/dadosReais'
 import { BADGE, iniciais, nomeTitulo, quando } from '../../lib/formato'
 import type { UsuarioReal } from '../../lib/graph'
@@ -37,6 +38,7 @@ export function Usuarios() {
   const dr = useDadosReais()
   const toast = useToast()
   const navegar = useNavigate()
+  const { catalogos } = useCatalogos()
   const [parametros] = useSearchParams()
   const [busca, setBusca] = useState(parametros.get('busca') ?? '')
   const [status, setStatus] = useState<StatusReal | 'todos'>('todos')
@@ -61,14 +63,14 @@ export function Usuarios() {
  .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : tipoConta === 'compartilhada' ? u.provavelCaixaCompartilhada : (!u.externo && !u.provavelCaixaCompartilhada)))
  .filter((u) => tipoLicenca === 'todas' || u.skuIds.some((id) => dr.nomesPorSkuId.get(id) === tipoLicenca))
       .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
-  }, [usuarios, busca, status, regiao, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId])
+  }, [usuarios, busca, status, regiao, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId, catalogos])
 
  
- const regioesDisponiveis = useMemo(() => [...new Set((usuarios ?? []).map((u) => regiaoDaUnidade(u.departamento)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [usuarios])
+ const regioesDisponiveis = useMemo(() => [...new Set((usuarios ?? []).map((u) => regiaoDaUnidade(u.departamento)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [usuarios, catalogos])
  // Com uma região escolhida, o seletor de unidades mostra só as unidades daquela região.
  const unidadesDisponiveis = useMemo(
    () => [...new Set((usuarios ?? []).filter((u) => regiao === 'todas' || regiaoDaUnidade(u.departamento) === regiao).map((u) => rotuloUnidade(u.departamento)))].sort(),
-   [usuarios, regiao],
+   [usuarios, regiao, catalogos],
  )
  const licencasDisponiveis = useMemo(() => [...new Set((usuarios ?? []).flatMap((u) => u.skuIds.map((id) => dr.nomesPorSkuId.get(id) ?? id)))].sort(), [usuarios, dr.nomesPorSkuId])
   useSubtitulo(usuarios ? `${usuarios.length} contas · ${filtrados?.length ?? 0} nesta seleção` : 'Conectando com a Microsoft…')
@@ -143,7 +145,7 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
 </select>
 <select className="sel" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
 <option value="todas">Todas as unidades</option>
-{unidadesDisponiveis.map((un) => (<option key={un} value={un}>{un}</option>))}
+{unidadesDisponiveis.map((un) => (<option key={un} value={un}>{descreverUnidade(un) || un}</option>))}
 </select>
 <select className="sel" value={tipoLicenca} onChange={(e) => setTipoLicenca(e.target.value)}>
 <option value="todas">Todos os tipos de licença</option>
