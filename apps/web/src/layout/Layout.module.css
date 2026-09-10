@@ -44,7 +44,7 @@
 
 .navLabel {
   font-size: 10.5px;
-  color: #5c6376;
+  color: var(--muted);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 14px 10px 6px;
@@ -72,13 +72,14 @@
 }
 
 .navItem:hover {
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text);
 }
 
 .navItem.on {
   background: var(--accent-soft);
-  color: #c7d6ff;
+  color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--brand);
 }
 
 .navItem.on svg {
@@ -154,7 +155,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(14, 17, 23, 0.86);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line-soft);
   padding: 16px 28px;

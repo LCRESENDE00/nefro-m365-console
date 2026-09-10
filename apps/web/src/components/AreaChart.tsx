@@ -7,7 +7,7 @@ type Props = {
 }
 
 /** Area chart em SVG puro: evita uma dependencia de grafico so por isso. */
-export function AreaChart({ dados, cor = '#5B8CFF', altura = 140 }: Props) {
+export function AreaChart({ dados, cor = '#e8412a', altura = 140 }: Props) {
   const gradiente = useId()
   if (dados.length < 2) return null
 

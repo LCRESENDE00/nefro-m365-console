@@ -161,7 +161,7 @@ Nenhuma conta ociosa ou inativa nesta janela.
 {unidadesExibidas.map((g) => {
 const aberta = unidadesAbertas.has(g.unidade)
 return (
-<div key={g.unidade} style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+<div key={g.unidade} style={{ borderTop: "1px solid var(--line-soft)" }}>
 <div onClick={() => alternarUnidade(g.unidade)} title={g.contas.length + " conta(s) em " + g.unidade} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 2px", cursor: "pointer" }}>
 <span>{aberta ? "▾" : "▸"} <b>{g.unidade}</b></span>
 <span className="badge b-neutral">{g.contas.length}</span>
