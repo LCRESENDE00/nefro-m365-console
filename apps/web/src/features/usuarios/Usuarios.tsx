@@ -6,6 +6,7 @@ import { useSubtitulo } from '../../layout/pagina'
 import { diasParaStatus, useDadosReais, type StatusReal } from '../../lib/dadosReais'
 import { BADGE, iniciais, nomeTitulo, quando } from '../../lib/formato'
 import { gerarSenhaTemporaria, type UsuarioReal } from '../../lib/graph'
+import { regiaoDaUnidade, rotuloUnidade } from '../../lib/regioes'
 import estilos from './Usuarios.module.css'
 
 const STATUS: Array<[StatusReal | 'todos', string]> = [
@@ -56,6 +57,7 @@ export function Usuarios() {
   const toast = useToast()
   const [busca, setBusca] = useState('')
   const [status, setStatus] = useState<StatusReal | 'todos'>('todos')
+ const [regiao, setRegiao] = useState('todas')
  const [unidade, setUnidade] = useState('todas')
  const [tipoLicenca, setTipoLicenca] = useState('todas')
  const [tipoConta, setTipoConta] = useState('todas')
@@ -72,14 +74,20 @@ export function Usuarios() {
     return usuarios
       .filter((u) => !termo || u.nome.toLowerCase().includes(termo) || u.upn.toLowerCase().includes(termo))
       .filter((u) => status === 'todos' || diasParaStatus(u.diasUltimoAcesso, dr.limiarOcioso, dr.limiarInativo) === status)
- .filter((u) => unidade === 'todas' || (u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida') === unidade)
+ .filter((u) => regiao === 'todas' || regiaoDaUnidade(u.departamento) === regiao)
+ .filter((u) => unidade === 'todas' || rotuloUnidade(u.departamento) === unidade)
  .filter((u) => tipoConta === 'todas' || (tipoConta === 'externo' ? u.externo : tipoConta === 'compartilhada' ? u.provavelCaixaCompartilhada : (!u.externo && !u.provavelCaixaCompartilhada)))
  .filter((u) => tipoLicenca === 'todas' || u.skuIds.some((id) => dr.nomesPorSkuId.get(id) === tipoLicenca))
       .sort((a, b) => (b.diasUltimoAcesso ?? 99999) - (a.diasUltimoAcesso ?? 99999))
-  }, [usuarios, busca, status, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId])
+  }, [usuarios, busca, status, regiao, unidade, tipoLicenca, tipoConta, dr.limiarOcioso, dr.limiarInativo, dr.nomesPorSkuId])
 
  
- const unidadesDisponiveis = useMemo(() => [...new Set((usuarios ?? []).map((u) => (u.departamento && u.departamento.trim() ? u.departamento.trim() : 'Sem unidade definida')))].sort(), [usuarios])
+ const regioesDisponiveis = useMemo(() => [...new Set((usuarios ?? []).map((u) => regiaoDaUnidade(u.departamento)))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [usuarios])
+ // Com uma região escolhida, o seletor de unidades mostra só as unidades daquela região.
+ const unidadesDisponiveis = useMemo(
+   () => [...new Set((usuarios ?? []).filter((u) => regiao === 'todas' || regiaoDaUnidade(u.departamento) === regiao).map((u) => rotuloUnidade(u.departamento)))].sort(),
+   [usuarios, regiao],
+ )
  const licencasDisponiveis = useMemo(() => [...new Set((usuarios ?? []).flatMap((u) => u.skuIds.map((id) => dr.nomesPorSkuId.get(id) ?? id)))].sort(), [usuarios, dr.nomesPorSkuId])
   useSubtitulo(usuarios ? `${usuarios.length} contas · ${filtrados?.length ?? 0} nesta seleção` : 'Conectando com a Microsoft…')
 
@@ -165,6 +173,10 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
         </div>
       </div>
 <div className={estilos.toolbar}>
+<select className="sel" value={regiao} onChange={(e) => { setRegiao(e.target.value); setUnidade('todas') }}>
+<option value="todas">Todas as regiões</option>
+{regioesDisponiveis.map((r) => (<option key={r} value={r}>{r}</option>))}
+</select>
 <select className="sel" value={unidade} onChange={(e) => setUnidade(e.target.value)}>
 <option value="todas">Todas as unidades</option>
 {unidadesDisponiveis.map((un) => (<option key={un} value={un}>{un}</option>))}
