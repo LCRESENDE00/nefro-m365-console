@@ -9,6 +9,7 @@ const TITULOS: Record<string, string> = {
   '/visao-geral': 'Visão geral',
   '/usuarios': 'Usuários',
   '/licencas': 'Licenças',
+  '/economia': 'Economia',
   '/armazenamento': 'Armazenamento',
   '/relatorios': 'Relatórios',
   '/administracao': 'Administração',
@@ -22,7 +23,7 @@ export function Topbar() {
   const subtitulo = useSubtituloAtual()
   const { sessao } = useSessao()
   const { limiarInativo, definirLimiarInativo } = useDadosReais()
-  const mostrarJanela = pathname === '/visao-geral' || pathname === '/usuarios'
+  const mostrarJanela = pathname === '/visao-geral' || pathname === '/usuarios' || pathname === '/economia'
 
   return (
     <header className={estilos.topbar}>
