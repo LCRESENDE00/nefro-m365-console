@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
   IconeAdministracao,
-  IconeArmazenamento,
   IconeConfiguracoes,
   IconeEconomia,
   IconeLicencas,
@@ -18,7 +17,6 @@ const PAINEL = [
   { para: '/usuarios', rotulo: 'Usuários', Icone: IconeUsuarios },
   { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas },
   { para: '/economia', rotulo: 'Economia', Icone: IconeEconomia },
-  { para: '/armazenamento', rotulo: 'Armazenamento', Icone: IconeArmazenamento },
 ]
 
 const SAIDA = [
