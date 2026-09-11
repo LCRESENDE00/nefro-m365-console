@@ -1,0 +1,12 @@
+{
+  "_comentario": "Configuração do envio automático. Lida pela tela Relatórios e pelo job agendado (.github/workflows/envio-automatico.yml). Para mudar destinatário, remetente ou desligar um envio, edite aqui e faça commit na main.",
+  "repositorio": "LCRESENDE00/nefro-m365-console",
+  "workflow": "envio-automatico.yml",
+  "remetente": "lucas.silva@nefroclinicas.com.br",
+  "destinatarios": ["lucas.silva@nefroclinicas.com.br"],
+  "resumoMensal": true,
+  "alertaContaInativa": true,
+  "limiarOcioso": 30,
+  "limiarInativo": 90,
+  "janelaAlertaDias": 7
+}
