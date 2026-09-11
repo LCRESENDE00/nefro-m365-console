@@ -3,6 +3,9 @@ name: Publicar demo no GitHub Pages
 on:
   push:
     branches: [main]
+  # Em pull request so roda o build (tsc + vite), sem publicar: pega erro antes do merge.
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -42,12 +45,15 @@ jobs:
           touch apps/web/dist/.nojekyll
 
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: apps/web/dist
 
   deploy:
     needs: build
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

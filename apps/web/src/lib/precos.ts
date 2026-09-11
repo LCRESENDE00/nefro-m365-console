@@ -1,20 +1,11 @@
 import { useCallback, useState } from 'react'
+import { PRECOS_PADRAO, type Precos } from './precosPadrao'
 
-/**
- * Valor unitário mensal (R$) de cada licença paga, por código técnico (skuPartNumber).
- *
- * A Microsoft Graph não informa o que a clínica paga por licença, então os valores
- * vêm da fatura. Os padrões abaixo são da fatura atual (plano anual, pagamento mensal);
- * qualquer alteração feita na tela Economia fica no localStorage do navegador.
- */
-export const PRECOS_PADRAO: Record<string, number> = {
-  O365_BUSINESS_ESSENTIALS: 31.15, // Microsoft 365 Business Basic
-  O365_BUSINESS_PREMIUM: 77.97, // Microsoft 365 Business Standard
-}
+// Os valores padrao (da fatura) ficam em lib/precosPadrao.ts, sem React, para o
+// envio automatico usar os mesmos numeros. Re-exportados aqui para as telas.
+export { PRECOS_PADRAO, type Precos }
 
 const CHAVE = 'nefro-m365:precos-licencas'
-
-export type Precos = Record<string, number>
 
 export function lerPrecos(): Precos {
   try {

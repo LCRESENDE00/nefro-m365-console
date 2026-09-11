@@ -1,3 +1,13 @@
+import { corpoSendMail, type MensagemEmail } from './email'
+import {
+  mapearLicenca,
+  mapearRegistroMfa,
+  mapearUsuario,
+  SELECAO_USUARIOS,
+  type LicencaReal,
+  type RegistroMfa,
+  type UsuarioReal,
+} from './graphModelos'
 import { garantirMsalInicializado, msalInstance } from './msalClient'
 
 /** Escopos pedidos de uma vez so, para nao abrir varios popups. */
@@ -104,127 +114,32 @@ export async function lerContaConectada() {
   return conta ? { nome: conta.name ?? conta.username, upn: conta.username } : null
 }
 
-/** Nomes amigaveis para os codigos tecnicos (skuPartNumber) que a Microsoft Graph devolve. */
-const NOMES_LICENCAS: Record<string, string> = {
-  MICROSOFT_365_COPILOT_FOR_BUSINESS: 'Microsoft 365 Copilot',
-  O365_BUSINESS_ESSENTIALS: 'Microsoft 365 Business Basic',
-  O365_BUSINESS_PREMIUM: 'Microsoft 365 Business Standard',
-  SPB: 'Microsoft 365 Business Premium',
-  SPE_E3: 'Microsoft 365 E3',
-  SPE_E5: 'Microsoft 365 E5',
-  ENTERPRISEPACK: 'Office 365 E3',
-  ENTERPRISEPREMIUM: 'Office 365 E5',
-  ENTERPRISEPREMIUM_NOPSTNCONF: 'Office 365 E5 (sem audioconferencia)',
-  STANDARDPACK: 'Office 365 E1',
-  DESKLESSPACK: 'Office 365 F3',
-  EXCHANGESTANDARD: 'Exchange Online (Plano 1)',
-  EXCHANGEENTERPRISE: 'Exchange Online (Plano 2)',
-  EXCHANGEARCHIVE_ADDON: 'Exchange Online Archiving',
-  POWER_BI_PRO: 'Power BI Pro',
-  POWER_BI_STANDARD: 'Power BI (gratuito)',
-  POWERAUTOMATE_ATTENDED_RPA: 'Power Automate por usuario com RPA assistida',
-  POWERAPPS_DEV: 'Power Apps para desenvolvedores',
-  POWERAPPS_VIRAL: 'Power Apps (avaliacao)',
-  FLOW_FREE: 'Power Automate (gratuito)',
-  'Teams_Premium_(for_Departments)': 'Microsoft Teams Premium',
-  Microsoft_Teams_Rooms_Pro: 'Microsoft Teams Rooms Pro',
-  MCOMEETADV: 'Microsoft Teams Audio Conferencing',
-  MCOPSTN1: 'Microsoft Teams Chamadas Nacionais',
-  WINDOWS_STORE: 'Windows Store',
-  WIN10_PRO_ENT_SUB: 'Windows 10/11 Enterprise',
-  EMS: 'Enterprise Mobility + Security E3',
-  EMSPREMIUM: 'Enterprise Mobility + Security E5',
-  AAD_PREMIUM: 'Microsoft Entra ID P1',
-  AAD_PREMIUM_P2: 'Microsoft Entra ID P2',
-  RIGHTSMANAGEMENT: 'Azure Information Protection',
-  VISIOCLIENT: 'Visio Plan 2',
-  PROJECTPROFESSIONAL: 'Project Plan 3',
-  PROJECTPREMIUM: 'Project Plan 5',
-  MEETING_ROOM: 'Microsoft Teams Rooms Standard',
-}
-
-/** Devolve um nome legivel para a licenca; se nao conhecer o codigo, so troca "_" por espaco. */
-export function nomeAmigavelLicenca(skuPartNumber: string): string {
-  return NOMES_LICENCAS[skuPartNumber] ?? skuPartNumber.replace(/_/g, ' ')
-}
-
-export type LicencaReal = {
-  skuId: string
-  skuPartNumber: string
-  nome: string
-  comprados: number
-  emUso: number
-  livres: number
- provavelAutosservico: boolean
-}
+// Nomes de licenca, tipos e mapeamento das respostas da Graph ficam em lib/graphModelos.ts
+// (sem MSAL), compartilhados com o script de envio automatico. Re-exportados aqui.
+export {
+  nomeAmigavelLicenca,
+  type LicencaReal,
+  type RegistroMfa,
+  type UsuarioReal,
+} from './graphModelos'
 
 export async function lerLicencas(): Promise<LicencaReal[]> {
   const resposta = await chamarGraph('/subscribedSkus')
   const dados = await resposta.json()
-  return (dados.value ?? []).map((sku: any) => {
-    const comprados = sku.prepaidUnits ? sku.prepaidUnits.enabled ?? 0 : 0
-    const emUso = sku.consumedUnits ?? 0
-    return {
-      skuId: sku.skuId,
-      skuPartNumber: sku.skuPartNumber,
-      nome: nomeAmigavelLicenca(sku.skuPartNumber),
-      comprados,
-      emUso,
-      livres: comprados - emUso,
- provavelAutosservico: comprados >= 5000,
-    }
-  })
-}
-
-export type UsuarioReal = {
-  id: string
-  nome: string
-  upn: string
-  habilitada: boolean
-  diasUltimoAcesso: number | null
- ultimoAcessoIso: string | null
-  skuIds: string[]
-  totalLicencas: number
- departamento: string | null
- externo: boolean
-  provavelCaixaCompartilhada: boolean
+  return (dados.value ?? []).map((sku: any) => mapearLicenca(sku))
 }
 
 export async function lerUsuarios(): Promise<UsuarioReal[]> {
-  const resposta = await chamarGraph(
-    '/users?$select=id,displayName,userPrincipalName,accountEnabled,signInActivity,assignedLicenses,department,userType&$top=999',
-  )
+  const resposta = await chamarGraph('/users?$select=' + SELECAO_USUARIOS + '&$top=999')
   const dados = await resposta.json()
   const agora = Date.now()
-  return (dados.value ?? []).map((u: any) => {
-    const ultimo = u.signInActivity ? u.signInActivity.lastSignInDateTime : null
-    const dias = ultimo ? Math.floor((agora - new Date(ultimo).getTime()) / 86400000) : null
-    const skuIds = (u.assignedLicenses ?? []).map((l: any) => l.skuId as string)
-    return {
-      id: u.id,
-      nome: u.displayName ?? u.userPrincipalName,
-      upn: u.userPrincipalName,
-      habilitada: !!u.accountEnabled,
-      diasUltimoAcesso: dias,
- ultimoAcessoIso: ultimo,
-      skuIds,
-      totalLicencas: skuIds.length,
- departamento: u.department ?? null,
- externo: u.userType === 'Guest',
-      provavelCaixaCompartilhada: skuIds.length === 0 && dias === null && u.userType !== 'Guest',
-    }
-  })
+  return (dados.value ?? []).map((u: any) => mapearUsuario(u, agora))
 }
-
-export type RegistroMfa = { upn: string; mfaRegistrado: boolean }
 
 export async function lerRegistroMfa(): Promise<RegistroMfa[]> {
   const resposta = await chamarGraph('/reports/authenticationMethods/userRegistrationDetails?$top=999')
   const dados = await resposta.json()
-  return (dados.value ?? []).map((r: any) => ({
-    upn: r.userPrincipalName,
-    mfaRegistrado: !!r.isMfaRegistered,
-  }))
+  return (dados.value ?? []).map((r: any) => mapearRegistroMfa(r))
 }
 
 export type ContaArmazenamento = { upn: string; nome: string; gb: number }
@@ -555,4 +470,15 @@ await chamarGraphEscrita('/users/' + id + '/assignLicense', 'POST', {
 addLicenses: [],
 removeLicenses: skuIds,
 })
+}
+
+/** Escopo pedido so na hora de enviar e-mail (consentimento incremental). */
+export const ESCOPOS_EMAIL = ['Mail.Send']
+
+/**
+ * Envia um e-mail pela caixa de quem esta logado (POST /me/sendMail).
+ * Na primeira vez a Microsoft pede o consentimento de Mail.Send em um popup.
+ */
+export async function enviarEmail(mensagem: MensagemEmail): Promise<void> {
+  await chamarGraphEscrita('/me/sendMail', 'POST', corpoSendMail(mensagem), ESCOPOS_EMAIL)
 }

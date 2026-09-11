@@ -1,0 +1,79 @@
+name: Envio automático de relatórios
+
+# Dispara os e-mails do NefroControl sem ninguém logado no console.
+# Horários em UTC (Brasília = UTC-3, sem horário de verão):
+#   0 11 1 * *  -> todo dia 1º às 08:00, resumo mensal
+#   0 11 * * 1  -> toda segunda às 08:00, alerta de contas que passaram da janela de análise
+# Destinatário, remetente e janelas ficam em apps/web/public/envio-automatico.json.
+# Configuração no Entra ID: docs/envio-automatico.md.
+on:
+  schedule:
+    - cron: '0 11 1 * *'
+    - cron: '0 11 * * 1'
+  workflow_dispatch:
+    inputs:
+      tipo:
+        description: 'O que enviar'
+        type: choice
+        options:
+          - resumo-mensal
+          - alerta-inativas
+        default: resumo-mensal
+      apenas_gerar:
+        description: 'Só gerar o e-mail (sem enviar) e anexar o HTML ao resultado, para conferir'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  # Necessário para a credencial federada (login no Entra ID sem segredo guardado).
+  id-token: write
+
+concurrency:
+  group: envio-automatico
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Decide o tipo de envio
+        id: tipo
+        env:
+          EVENTO: ${{ github.event_name }}
+          AGENDAMENTO: ${{ github.event.schedule }}
+          ESCOLHIDO: ${{ inputs.tipo }}
+        run: |
+          if [ "$EVENTO" = "schedule" ]; then
+            if [ "$AGENDAMENTO" = "0 11 1 * *" ]; then tipo=resumo-mensal; else tipo=alerta-inativas; fi
+          else
+            tipo="${ESCOLHIDO:-resumo-mensal}"
+          fi
+          echo "tipo=$tipo" >> "$GITHUB_OUTPUT"
+          echo "Tipo de envio: $tipo"
+
+      # O script só usa módulos puros de apps/web/src/lib (sem React nem MSAL),
+      # então não precisa de `npm ci`: o tsx roda o TypeScript direto.
+      - name: Gera e envia o e-mail
+        run: npx --yes tsx@4 apps/web/scripts/envio-automatico.ts "${{ steps.tipo.outputs.tipo }}"
+        env:
+          AZURE_TENANT_ID: ${{ vars.VITE_MSAL_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ vars.VITE_MSAL_CLIENT_ID }}
+          # Opcional: só se preferir segredo de cliente em vez da credencial federada.
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ENVIO_APENAS_GERAR: ${{ inputs.apenas_gerar == true && '1' || '' }}
+
+      - name: Anexa o e-mail gerado (só quando "apenas gerar")
+        if: ${{ inputs.apenas_gerar == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-gerado
+          path: email-gerado/
+          if-no-files-found: warn
