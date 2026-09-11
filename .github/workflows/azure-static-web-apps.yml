@@ -1,0 +1,74 @@
+name: Publicar no Azure Static Web Apps
+
+# Publica o NefroControl em https://<nome>.azurestaticapps.net (ou no domínio
+# próprio configurado no Azure). Mesmo build do GitHub Pages, só que servido
+# na raiz (base "/") em vez de /nefro-m365-console/.
+# Passo a passo da configuração no Azure e no Entra: docs/azure-static-web-apps.md.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Uma publicação por vez; não cancela a que já está rodando.
+concurrency:
+  group: azure-static-web-apps
+  cancel-in-progress: false
+
+jobs:
+  # Enquanto o token do Azure não estiver nos secrets do repositório, o job de
+  # publicação é pulado (fica cinza, não vermelho) e o Pages segue normal.
+  verificar:
+    runs-on: ubuntu-latest
+    outputs:
+      token_ok: ${{ steps.token.outputs.ok }}
+    steps:
+      - id: token
+        env:
+          SWA_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        run: |
+          if [ -z "$SWA_TOKEN" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "Secret AZURE_STATIC_WEB_APPS_API_TOKEN não cadastrado; publicação no Azure pulada. Veja docs/azure-static-web-apps.md." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  publicar:
+    needs: verificar
+    if: needs.verificar.outputs.token_ok == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Sem backend (dados do seed + Graph direto do navegador), igual ao Pages,
+      # mas com `vite build` normal: base "/" porque o site fica na raiz do host.
+      - name: Build da SPA
+        run: npm run build:dominio && npm run build -w apps/web
+        env:
+          VITE_SEM_BACKEND: 'true'
+          VITE_MSAL_CLIENT_ID: ${{ vars.VITE_MSAL_CLIENT_ID }}
+          VITE_MSAL_TENANT_ID: ${{ vars.VITE_MSAL_TENANT_ID }}
+
+      # O build já foi feito acima, então o Azure só recebe a pasta dist pronta.
+      # O fallback de rotas do SPA vem de apps/web/public/staticwebapp.config.json,
+      # que o Vite copia para dentro de dist.
+      - name: Publicar no Azure
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: apps/web/dist
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true
