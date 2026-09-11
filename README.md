@@ -178,7 +178,7 @@ nenhuma consulta do app depende do dialeto.
 
 - [ ] Autenticacao real via Entra ID (MSAL) no lugar da sessao simulada (ja existe uma versao experimental em `/licencas-reais`, com login MSAL.js direto no navegador - ver `docs/entra-id-setup.md`)
 - [ ] Sincronização com o Microsoft Graph (`User.Read.All`, `Reports.Read.All`) alimentando as mesmas tabelas
-- [ ] Disparo efetivo do resumo mensal por e-mail (as preferências já são persistidas)
+- [x] Disparo efetivo do resumo mensal por e-mail e alerta de conta inativa, pelo GitHub Actions com token de aplicativo, e "Enviar agora" pela Graph na tela Relatórios (ver `docs/envio-automatico.md`)
 - [ ] Filtro por plano vindo da tela de Licenças
 - [ ] Exportação em `.xlsx` além do CSV
 
