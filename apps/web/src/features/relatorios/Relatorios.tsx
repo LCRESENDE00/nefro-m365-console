@@ -3,12 +3,13 @@ import { Carregando, Erro } from '../../components/Estado'
 import { IconeRelatorios } from '../../components/icones'
 import { LinhaToggle } from '../../components/LinhaToggle'
 import { useToast } from '../../components/Toast'
-import { configuracoesRepo, relatoriosRepo } from '../../data'
+import { SEM_BACKEND, configuracoesRepo, relatoriosRepo } from '../../data'
 import { useSubtitulo } from '../../layout/pagina'
 import { baixar } from '../../lib/baixar'
 import { useDados } from '../../lib/dados'
 import { dataHora } from '../../lib/formato'
 import { useConsulta } from '../../lib/useConsulta'
+import { EnvioAutomatico } from './EnvioAutomatico'
 import estilos from './Relatorios.module.css'
 
 const DESCRICOES: Record<string, string> = {
@@ -75,38 +76,43 @@ export function Relatorios() {
         ))}
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-h">
-          <h3>Envio automático</h3>
-          <span className={`badge ${algumAtivo ? 'b-ok' : 'b-neutral'}`} style={{ marginLeft: 'auto' }}>
-            {algumAtivo ? 'Ativo' : 'Desligado'}
-          </span>
+      {SEM_BACKEND ? (
+        // Site publicado: o disparo real roda no GitHub Actions e o "Enviar agora" usa a Graph.
+        <EnvioAutomatico />
+      ) : (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-h">
+            <h3>Envio automático</h3>
+            <span className={`badge ${algumAtivo ? 'b-ok' : 'b-neutral'}`} style={{ marginLeft: 'auto' }}>
+              {algumAtivo ? 'Ativo' : 'Desligado'}
+            </span>
+          </div>
+
+          <LinhaToggle
+            titulo="Resumo mensal por e-mail"
+            descricao={`Todo dia 1º, às 08:00, para ${envio.destinatario}`}
+            ligado={envio.resumoMensal}
+            aoAlternar={(v) => alternar('resumoMensal', v)}
+          />
+          <LinhaToggle
+            titulo="Alerta de conta inativa"
+            descricao="Avisa quando uma conta passa da janela de análise sem acesso"
+            ligado={envio.alertaContaInativa}
+            aoAlternar={(v) => alternar('alertaContaInativa', v)}
+          />
+          <LinhaToggle
+            titulo="Cópia na pasta da TI"
+            descricao="Salva cada relatório gerado no SharePoint da equipe"
+            ligado={envio.copiaPastaTI}
+            aoAlternar={(v) => alternar('copiaPastaTI', v)}
+          />
+
+          <p className="muted" style={{ fontSize: 11.5, marginTop: 14, marginBottom: 0 }}>
+            As preferências ficam gravadas no banco. O disparo de e-mail em si depende de um serviço de
+            envio, ainda não conectado.
+          </p>
         </div>
-
-        <LinhaToggle
-          titulo="Resumo mensal por e-mail"
-          descricao={`Todo dia 1º, às 08:00, para ${envio.destinatario}`}
-          ligado={envio.resumoMensal}
-          aoAlternar={(v) => alternar('resumoMensal', v)}
-        />
-        <LinhaToggle
-          titulo="Alerta de conta inativa"
-          descricao="Avisa quando uma conta passa da janela de análise sem acesso"
-          ligado={envio.alertaContaInativa}
-          aoAlternar={(v) => alternar('alertaContaInativa', v)}
-        />
-        <LinhaToggle
-          titulo="Cópia na pasta da TI"
-          descricao="Salva cada relatório gerado no SharePoint da equipe"
-          ligado={envio.copiaPastaTI}
-          aoAlternar={(v) => alternar('copiaPastaTI', v)}
-        />
-
-        <p className="muted" style={{ fontSize: 11.5, marginTop: 14, marginBottom: 0 }}>
-          As preferências ficam gravadas no banco. O disparo de e-mail em si depende de um serviço de
-          envio, ainda não conectado.
-        </p>
-      </div>
+      )}
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-h">

@@ -37,3 +37,47 @@
   color: var(--muted);
   max-width: 46ch;
 }
+
+/* ---------- envio automatico: enviar agora ---------- */
+.enviarAgora {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.enviarAgora label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.3px;
+  color: var(--muted);
+}
+
+.enviarAgora input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.enviarAgora input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: transparent;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.enviarAgora p {
+  margin: 10px 0 0;
+  font-size: 12px;
+}
