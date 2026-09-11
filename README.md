@@ -102,6 +102,15 @@ O que muda na demo:
 
 Para rodar a versão completa, com API e banco, siga [Como rodar](#como-rodar) acima.
 
+### Fora do GitHub Pages (Azure Static Web Apps)
+
+O mesmo build estático pode ser servido do Azure, com endereço `*.azurestaticapps.net` ou um
+domínio da Nefroclínicas. O workflow
+[`.github/workflows/azure-static-web-apps.yml`](.github/workflows/azure-static-web-apps.yml)
+publica a cada push na `main` assim que o secret `AZURE_STATIC_WEB_APPS_API_TOKEN` existir no
+repositório; até lá ele é pulado e o Pages segue sozinho. Passo a passo (recurso no Azure, token,
+URI de redirecionamento no Entra, domínio próprio): [docs/azure-static-web-apps.md](docs/azure-static-web-apps.md).
+
 ---
 
 ## Arquitetura
