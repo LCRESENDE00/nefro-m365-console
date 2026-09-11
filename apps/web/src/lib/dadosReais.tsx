@@ -17,14 +17,9 @@ import {
   type UsuarioReal,
 } from './graph'
 
-export type StatusReal = 'ativo' | 'ocioso' | 'inativo' | 'nunca'
-
-export function diasParaStatus(dias: number | null, limiarOcioso: number, limiarInativo: number): StatusReal {
-  if (dias === null) return 'nunca'
-  if (dias <= limiarOcioso) return 'ativo'
-  if (dias <= limiarInativo) return 'ocioso'
-  return 'inativo'
-}
+// A classificacao por dias sem acesso mora em lib/status.ts (sem React), para o
+// script de envio automatico usar a mesma regra; aqui so re-exporta.
+export { diasParaStatus, type StatusReal } from './status'
 
 type Estado = {
   conectando: boolean

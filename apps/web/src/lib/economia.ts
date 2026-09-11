@@ -1,6 +1,6 @@
-import { diasParaStatus } from './dadosReais'
-import type { LicencaReal, UsuarioReal } from './graph'
-import type { Precos } from './precos'
+import type { LicencaReal, UsuarioReal } from './graphModelos'
+import type { Precos } from './precosPadrao'
+import { diasParaStatus } from './status'
 
 /**
  * Quanto a clínica economizaria removendo licenças que não estão sendo usadas.
