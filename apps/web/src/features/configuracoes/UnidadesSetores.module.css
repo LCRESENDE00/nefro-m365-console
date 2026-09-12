@@ -54,6 +54,27 @@
   border-color: var(--rose);
 }
 
+/* endereço da unidade (assinatura de e-mail): segunda linha, ocupando a largura toda */
+.linha .endereco {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  margin-bottom: 2px;
+}
+
+.linha .endereco:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
 .remover {
   width: 30px;
   height: 30px;

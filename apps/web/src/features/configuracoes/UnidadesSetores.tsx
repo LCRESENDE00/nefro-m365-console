@@ -68,7 +68,8 @@ export function UnidadesSetores() {
       <p className="muted" style={{ fontSize: 12.8, margin: '0 0 14px' }}>
         São as listas suspensas do cadastro de conta e dos filtros de Usuários: quem cadastra escolhe daqui, então a
         sigla e o nome saem sempre iguais. A sigla da unidade é o que vai para o campo <span className="mono">department</span>{' '}
-        do Entra. A lista fica salva neste navegador — use "Copiar lista" / "Colar lista" para levar para outro.
+        do Entra. O endereço de cada unidade entra na assinatura de e-mail gerada para quem é dela. A lista fica salva
+        neste navegador — use "Copiar lista" / "Colar lista" para levar para outro.
       </p>
 
       <div className={estilos.secao}>Unidades</div>
@@ -104,6 +105,14 @@ export function UnidadesSetores() {
             >
               ×
             </button>
+            <textarea
+              className={estilos.endereco}
+              rows={2}
+              value={unidade.endereco ?? ''}
+              placeholder="Endereço para a assinatura de e-mail (uma linha por quebra; vazio = sem endereço)"
+              aria-label={`Endereço da unidade ${unidade.sigla} na assinatura de e-mail`}
+              onChange={(e) => salvarUnidade({ ...unidade, endereco: e.target.value })}
+            />
           </div>
         ))}
         <div className={`${estilos.linha} ${estilos.nova}`}>
