@@ -72,7 +72,7 @@ function linhaComIcone(urlBase: string, icone: string, alt: string, conteudoHtml
     `<tr>` +
     `<td width="22" valign="${alinhar}" style="padding:3px 6px 3px 0;vertical-align:${alinhar};">` +
     `<img src="${urlBase}icone-${icone}.png" width="16" height="16" alt="${alt}" style="display:block;border:0;width:16px;height:16px;margin-top:${alinhar === 'top' ? 1 : 0}px;"></td>` +
-    `<td valign="${alinhar}" style="padding:3px 0;font-family:${FONTE};font-size:13px;line-height:18px;color:${CINZA_TEXTO};vertical-align:${alinhar};">${conteudoHtml}</td>` +
+    `<td valign="${alinhar}" style="padding:3px 0;font-family:${FONTE};font-size:13px;line-height:18px;color:${CINZA_TEXTO};vertical-align:${alinhar};white-space:nowrap;">${conteudoHtml}</td>` +
     `</tr>`
   )
 }
@@ -95,13 +95,15 @@ export function montarAssinaturaHtml(dados: DadosAssinatura, urlBase: string = u
   if (telefone) linhas.push(linhaComIcone(urlBase, 'telefone', 'Telefone', telefone))
   if (endereco.length > 0) linhas.push(linhaComIcone(urlBase, 'local', 'Endereço', endereco.join('<br>'), 'top'))
   if (redes) {
+    // Os dois ícones e o texto na mesma célula (colspan): numa coluna de 22px o Outlook
+    // empilhava Facebook em cima do Instagram.
     linhas.push(
       `<tr>` +
-      `<td width="22" valign="middle" style="padding:3px 6px 3px 0;vertical-align:middle;white-space:nowrap;">` +
+      `<td colspan="2" valign="middle" style="padding:3px 0;font-family:${FONTE};font-size:13px;line-height:18px;color:${CINZA_TEXTO};vertical-align:middle;white-space:nowrap;">` +
       `<img src="${urlBase}icone-facebook.png" width="16" height="16" alt="Facebook" style="display:inline-block;border:0;width:16px;height:16px;vertical-align:middle;">` +
       `<img src="${urlBase}icone-instagram.png" width="16" height="16" alt="Instagram" style="display:inline-block;border:0;width:16px;height:16px;vertical-align:middle;margin-left:4px;">` +
+      `<span style="margin-left:8px;vertical-align:middle;">${redes}</span>` +
       `</td>` +
-      `<td valign="middle" style="padding:3px 0 3px 4px;font-family:${FONTE};font-size:13px;line-height:18px;color:${CINZA_TEXTO};vertical-align:middle;">${redes}</td>` +
       `</tr>`,
     )
   }
@@ -113,8 +115,10 @@ export function montarAssinaturaHtml(dados: DadosAssinatura, urlBase: string = u
     `<img src="${urlBase}logo.png" width="110" height="49" alt="Nefroclínicas" style="display:block;border:0;width:110px;height:auto;margin:0 auto;">` +
     `</td>` +
     `<td valign="middle" style="padding:10px 16px 10px 22px;vertical-align:middle;">` +
-    `<div style="font-family:${FONTE};font-size:19px;line-height:23px;font-weight:bold;color:${VERMELHO_NOME};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 2px;">${nome}</div>` +
-    (cargo ? `<div style="font-family:${FONTE};font-size:14px;line-height:18px;font-weight:bold;color:${CINZA_CARGO};margin:0 0 8px;">${cargo}</div>` : `<div style="height:6px;line-height:6px;font-size:6px;">&nbsp;</div>`) +
+    // nowrap: a tabela cresce para caber o nome/endereço em vez de quebrar linha no painel
+    // de leitura estreito do Outlook (assinatura tem largura fixa, como a do modelo).
+    `<div style="font-family:${FONTE};font-size:19px;line-height:23px;font-weight:bold;color:${VERMELHO_NOME};text-transform:uppercase;letter-spacing:0.5px;margin:0 0 2px;white-space:nowrap;">${nome}</div>` +
+    (cargo ? `<div style="font-family:${FONTE};font-size:14px;line-height:18px;font-weight:bold;color:${CINZA_CARGO};margin:0 0 8px;white-space:nowrap;">${cargo}</div>` : `<div style="height:6px;line-height:6px;font-size:6px;">&nbsp;</div>`) +
     `<table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">${linhas.join('')}</table>` +
     `</td>` +
     `</tr>` +
