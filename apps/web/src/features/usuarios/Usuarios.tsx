@@ -1,14 +1,16 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
-import { IconeBusca, IconeChave, IconeInativar, IconeLixeira, IconeNovaConta } from '../../components/icones'
+import { IconeAssinatura, IconeBusca, IconeChave, IconeInativar, IconeLixeira, IconeNovaConta } from '../../components/icones'
 import { useToast } from '../../components/Toast'
 import { useSubtitulo } from '../../layout/pagina'
-import { descreverUnidade, useCatalogos } from '../../lib/catalogos'
+import { REDES_SOCIAIS_PADRAO, type DadosAssinatura } from '../../lib/assinatura'
+import { descreverUnidade, enderecoDaUnidade, useCatalogos } from '../../lib/catalogos'
 import { diasParaStatus, useDadosReais, type StatusReal } from '../../lib/dadosReais'
 import { BADGE, iniciais, nomeTitulo, quando } from '../../lib/formato'
-import type { UsuarioReal } from '../../lib/graph'
+import { lerPerfilAssinatura, type UsuarioReal } from '../../lib/graph'
 import { regiaoDaUnidade, rotuloUnidade } from '../../lib/regioes'
+import { AssinaturaEmail } from './AssinaturaEmail'
 import estilos from './Usuarios.module.css'
 
 const STATUS: Array<[StatusReal | 'todos', string]> = [
@@ -22,6 +24,7 @@ const STATUS: Array<[StatusReal | 'todos', string]> = [
 type AcaoSenha = { usuario: UsuarioReal; executando: boolean; erro: string | null; senha: string | null }
 type AcaoSituacao = { usuario: UsuarioReal; habilitarPara: boolean; executando: boolean; erro: string | null }
 type AcaoLicencas = { usuario: UsuarioReal; executando: boolean; erro: string | null; removidas: boolean }
+type AcaoAssinatura = { usuario: UsuarioReal; carregando: boolean; erro: string | null; dados: DadosAssinatura | null }
 
 const OVERLAY: CSSProperties = {
   position: 'fixed',
@@ -49,6 +52,7 @@ export function Usuarios() {
   const [acaoSenha, setAcaoSenha] = useState<AcaoSenha | null>(null)
   const [acaoSituacao, setAcaoSituacao] = useState<AcaoSituacao | null>(null)
  const [acaoLicencas, setAcaoLicencas] = useState<AcaoLicencas | null>(null)
+  const [acaoAssinatura, setAcaoAssinatura] = useState<AcaoAssinatura | null>(null)
 
   const usuarios = dr.usuarios
 
@@ -109,6 +113,29 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, removidas: true } : a))
 setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.message : "Não foi possível remover as licenças." } : a))
 }
 }
+
+  /** Lê cargo, telefone e unidade da conta no Graph e abre a assinatura de e-mail pronta para copiar/enviar. */
+  async function abrirAssinatura(usuario: UsuarioReal) {
+    setAcaoAssinatura({ usuario, carregando: true, erro: null, dados: null })
+    try {
+      const perfil = await lerPerfilAssinatura(usuario.id)
+      setAcaoAssinatura({
+        usuario,
+        carregando: false,
+        erro: null,
+        dados: {
+          nome: perfil.nome || nomeTitulo(usuario.nome),
+          cargo: perfil.cargo,
+          email: perfil.email || usuario.upn,
+          telefone: perfil.celular || perfil.telefone,
+          endereco: enderecoDaUnidade(perfil.departamento || usuario.departamento),
+          redesSociais: REDES_SOCIAIS_PADRAO,
+        },
+      })
+    } catch (e: any) {
+      setAcaoAssinatura({ usuario, carregando: false, erro: e && e.message ? e.message : 'Não foi possível ler os dados da conta.', dados: null })
+    }
+  }
 
   if (dr.erroConexao) return <Erro mensagem={dr.erroConexao} aoTentarNovamente={dr.conectar} />
   if (dr.conectando || !usuarios) {
@@ -227,6 +254,14 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
                         <td>
                           <div className={estilos.acoes} onClick={(e) => e.stopPropagation()}>
                             <button
+                              title="Assinatura de e-mail"
+                              aria-label={`Assinatura de e-mail de ${u.nome}`}
+                              disabled={u.externo}
+                              onClick={() => void abrirAssinatura(u)}
+                            >
+                              <IconeAssinatura />
+                            </button>
+                            <button
                               title="Redefinir senha"
                               aria-label={`Redefinir senha de ${u.nome}`}
                               onClick={() => setAcaoSenha({ usuario: u, executando: false, erro: null, senha: null })}
@@ -254,6 +289,33 @@ setAcaoLicencas((a) => (a ? { ...a, executando: false, erro: e && e.message ? e.
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {acaoAssinatura && (
+        <div style={OVERLAY} onClick={() => setAcaoAssinatura(null)}>
+          <div style={{ width: '100%', maxWidth: 780, maxHeight: '92vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            {acaoAssinatura.dados ? (
+              <AssinaturaEmail
+                key={acaoAssinatura.usuario.id}
+                inicial={acaoAssinatura.dados}
+                destinatarioPadrao={acaoAssinatura.usuario.upn}
+                aoFechar={() => setAcaoAssinatura(null)}
+              />
+            ) : (
+              <div className="card" style={{ padding: 20, maxWidth: 420, margin: '0 auto' }}>
+                <h3>Assinatura de {nomeTitulo(acaoAssinatura.usuario.nome)}</h3>
+                {acaoAssinatura.carregando ? (
+                  <p className="muted">Lendo cargo e telefone da conta no Microsoft 365…</p>
+                ) : (
+                  <p style={{ color: 'var(--rose)' }}>{acaoAssinatura.erro}</p>
+                )}
+                <button className="btn" style={{ marginTop: 8 }} onClick={() => setAcaoAssinatura(null)}>
+                  Fechar
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
