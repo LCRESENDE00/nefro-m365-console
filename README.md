@@ -20,7 +20,7 @@ React + TypeScript no front, API Express com Prisma e banco SQLite atrás.
 | Tela | O que responde |
 | --- | --- |
 | **Visão geral** | Quanto se paga por mês em licença parada, distribuição por plano, série de acessos semanais, contas que precisam de revisão |
-| **Usuários** | Tabela com busca, filtro por setor e status, ordenação; painel lateral por conta com sugestão de economia |
+| **Usuários** | Tabela com busca, filtro por setor e status, ordenação; painel lateral por conta com sugestão de economia; assinatura de e-mail no padrão Nefroclínicas por conta (copiar, baixar .htm ou enviar com o passo a passo) — a mesma que o assistente de nova conta entrega ao final |
 | **Licenças** | Assentos contratados × atribuídos × em uso, por plano, com o custo desperdiçado de cada um |
 | **Relatórios** | Geração de CSV a partir do banco, preferências de envio automático e histórico de exportações |
 | **Configurações** | Conexão, permissões de leitura, limiares de conta ociosa/inativa, contas marcadas para revisão |

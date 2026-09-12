@@ -1,0 +1,156 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.topo h3 {
+  font-family: var(--display);
+  font-size: 15px;
+  margin: 0 0 3px;
+}
+
+.topo p {
+  margin: 0;
+  font-size: 12.6px;
+  color: var(--muted);
+}
+
+.fechar {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1;
+  flex: none;
+}
+
+.fechar:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* A prévia é sempre branca, como o corpo de um e-mail — não segue o modo escuro. */
+.previa {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+  overflow-x: auto;
+  color-scheme: light;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.campo > span {
+  font-size: 12.3px;
+  color: var(--text-2);
+}
+
+.campo input,
+.campo textarea {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+  width: 100%;
+  min-width: 0;
+}
+
+.campo textarea {
+  resize: vertical;
+  min-height: 56px;
+}
+
+.campo input:focus,
+.campo textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.largo {
+  grid-column: 1 / -1;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.envio {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.envio input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 13px;
+  color: inherit;
+}
+
+.envio input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.erro {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--rose);
+}
+
+.ok {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.nota {
+  margin: 0;
+  font-size: 11.8px;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .campos {
+    grid-template-columns: 1fr;
+  }
+}

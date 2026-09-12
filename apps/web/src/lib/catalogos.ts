@@ -18,6 +18,12 @@ export type Unidade = {
   nome: string
   /** Região usada no filtro "Todas as regiões" da tela de Usuários. */
   regiao: string
+  /**
+   * Endereço que entra na assinatura de e-mail de quem é dessa unidade, uma linha por
+   * quebra de linha (ex.: "Rua X, 10 / 2º andar - Centro\nBelo Horizonte - CEP: 30000-000").
+   * Vazio = a assinatura sai sem a linha de endereço.
+   */
+  endereco?: string
 }
 
 export type Catalogos = {
@@ -29,7 +35,12 @@ export const CHAVE_CATALOGOS = 'nefrocontrol:catalogos'
 
 /** Unidades da rede como estão no Entra; nome e região são editáveis em Configurações. */
 export const UNIDADES_PADRAO: Unidade[] = [
-  { sigla: 'NCBHZ', nome: 'Belo Horizonte', regiao: 'Minas Gerais' },
+  {
+    sigla: 'NCBHZ',
+    nome: 'Belo Horizonte',
+    regiao: 'Minas Gerais',
+    endereco: 'Rua Gonçalves Dias nº 89 / 12º andar - Funcionários\nBelo Horizonte - CEP: 30140-090',
+  },
   { sigla: 'NCGVA', nome: 'Governador Valadares', regiao: 'Minas Gerais' },
   { sigla: 'NCIPA', nome: 'Ipatinga', regiao: 'Minas Gerais' },
   { sigla: 'NCBSB', nome: 'Brasília', regiao: 'Distrito Federal' },
@@ -57,7 +68,13 @@ function lerSalvo(): Catalogos {
     const unidades = Array.isArray(salvo.unidades)
       ? salvo.unidades
           .filter((u) => u && typeof u.sigla === 'string' && u.sigla.trim())
-          .map((u) => ({ sigla: normalizarSigla(u.sigla), nome: String(u.nome ?? '').trim(), regiao: String(u.regiao ?? '').trim() }))
+          .map((u) => {
+            const sigla = normalizarSigla(u.sigla)
+            const salvoEndereco = typeof u.endereco === 'string' ? u.endereco.trim() : ''
+            // Lista salva antes de existir o endereço: herda o padrão da mesma sigla.
+            const endereco = salvoEndereco || UNIDADES_PADRAO.find((p) => p.sigla === sigla)?.endereco || ''
+            return { sigla, nome: String(u.nome ?? '').trim(), regiao: String(u.regiao ?? '').trim(), endereco }
+          })
       : UNIDADES_PADRAO
     const setores = Array.isArray(salvo.setores)
       ? salvo.setores.map((s) => String(s).trim()).filter(Boolean)
@@ -75,7 +92,13 @@ export const lerCatalogos = () => catalogosAtuais
 
 export function definirCatalogos(novos: Catalogos) {
   catalogosAtuais = {
-    unidades: novos.unidades.map((u) => ({ ...u, sigla: normalizarSigla(u.sigla), nome: u.nome.trim(), regiao: u.regiao.trim() })),
+    unidades: novos.unidades.map((u) => ({
+      ...u,
+      sigla: normalizarSigla(u.sigla),
+      nome: u.nome.trim(),
+      regiao: u.regiao.trim(),
+      endereco: (u.endereco ?? '').trim(),
+    })),
     setores: novos.setores.map((s) => s.trim()).filter(Boolean),
   }
   try {
@@ -131,6 +154,9 @@ export function descreverUnidade(sigla: string | null | undefined): string {
   const unidade = unidadePorSigla(sigla)
   return unidade && unidade.nome ? `${unidade.sigla} · ${unidade.nome}` : (sigla ?? '').trim()
 }
+
+/** Endereço da unidade para a assinatura de e-mail ('' quando não há ou a sigla não está no catálogo). */
+export const enderecoDaUnidade = (sigla: string | null | undefined) => unidadePorSigla(sigla)?.endereco ?? ''
 
 /** Regiões já usadas, para sugerir ao cadastrar uma unidade nova. */
 export const regioesDoCatalogo = () =>

@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
 import { useToast } from '../../components/Toast'
 import { useSubtitulo } from '../../layout/pagina'
-import { descreverUnidade, useCatalogos } from '../../lib/catalogos'
+import { REDES_SOCIAIS_PADRAO, type DadosAssinatura } from '../../lib/assinatura'
+import { descreverUnidade, enderecoDaUnidade, useCatalogos } from '../../lib/catalogos'
 import { useDadosReais } from '../../lib/dadosReais'
 import { nomeTitulo } from '../../lib/formato'
 import {
@@ -22,6 +23,7 @@ import {
   type PerfilUsuario,
 } from '../../lib/graph'
 import { CATEGORIAS_PAPEIS, PAPEIS_ADMIN, papelPorId } from '../../lib/papeis'
+import { AssinaturaEmail } from './AssinaturaEmail'
 import estilos from './NovaConta.module.css'
 
 /* ------------------------------------------------------------------ */
@@ -303,6 +305,8 @@ type Conclusao = {
   senha: string | null
   linkConvite: string | null
   passos: ResultadoPasso[]
+  /** Assinatura de e-mail montada com o que foi cadastrado (só conta interna). */
+  assinatura: DadosAssinatura | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -542,7 +546,7 @@ export function NovaConta() {
         estado: 'erro',
         detalhe: mensagemDe(falha, 'A Microsoft não aceitou a criação.'),
       })
-      setConclusao({ criada: false, nome: nomeFinal, upn, senha: null, linkConvite: null, passos })
+      setConclusao({ criada: false, nome: nomeFinal, upn, senha: null, linkConvite: null, passos, assinatura: null })
       setExecutando(false)
       return
     }
@@ -596,7 +600,19 @@ export function NovaConta() {
 
     await dr.recarregarUsuarios()
     toast(form.tipo === 'interno' ? 'Conta criada no Microsoft 365: ' + upn : 'Convite enviado para ' + upn)
-    setConclusao({ criada: true, nome: nomeFinal, upn, senha, linkConvite, passos })
+    // Assinatura de e-mail no padrão da empresa, só para conta interna (convidado usa o e-mail dele).
+    const assinatura: DadosAssinatura | null =
+      form.tipo === 'interno'
+        ? {
+            nome: nomeFinal,
+            cargo: form.cargo.trim(),
+            email: upn,
+            telefone: form.celular.trim() || form.telefone.trim(),
+            endereco: enderecoDaUnidade(form.departamento),
+            redesSociais: REDES_SOCIAIS_PADRAO,
+          }
+        : null
+    setConclusao({ criada: true, nome: nomeFinal, upn, senha, linkConvite, passos, assinatura })
     setExecutando(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -722,6 +738,10 @@ export function NovaConta() {
             ))}
           </div>
         </div>
+
+        {conclusao.criada && conclusao.assinatura && (
+          <AssinaturaEmail inicial={conclusao.assinatura} destinatarioPadrao={conclusao.upn} />
+        )}
 
         <div className={estilos.rodape}>
           <div>

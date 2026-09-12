@@ -90,6 +90,15 @@ export const IconeInativar = () => (
   </svg>
 )
 
+/** Assinatura de e-mail: envelope com uma linha de "assinatura" embaixo. */
+export const IconeAssinatura = () => (
+  <svg {...base} width="15" height="15" strokeWidth={1.8}>
+    <rect x="3" y="4.5" width="18" height="12" rx="2" />
+    <path d="m3 7.5 9 5.5 9-5.5" />
+    <path d="M7 20h10" />
+  </svg>
+)
+
 export const IconeLixeira = () => (
   <svg {...base} width="15" height="15" strokeWidth={1.8}>
     <path d="M4 6.5h16" />
