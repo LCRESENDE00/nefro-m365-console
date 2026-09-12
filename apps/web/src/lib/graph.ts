@@ -472,6 +472,32 @@ removeLicenses: skuIds,
 })
 }
 
+/** O que a assinatura de e-mail usa da conta (GET /users/{id} com $select enxuto). */
+export type PerfilAssinatura = {
+  nome: string
+  cargo: string
+  email: string
+  celular: string
+  telefone: string
+  /** Sigla da unidade (campo `department`), para buscar o endereco no catalogo. */
+  departamento: string
+}
+
+export async function lerPerfilAssinatura(id: string): Promise<PerfilAssinatura> {
+  const resposta = await chamarGraph(
+    '/users/' + encodeURIComponent(id) + '?$select=displayName,jobTitle,mail,userPrincipalName,mobilePhone,businessPhones,department',
+  )
+  const u = await resposta.json()
+  return {
+    nome: u.displayName ?? '',
+    cargo: u.jobTitle ?? '',
+    email: u.mail ?? u.userPrincipalName ?? '',
+    celular: u.mobilePhone ?? '',
+    telefone: Array.isArray(u.businessPhones) && u.businessPhones.length > 0 ? String(u.businessPhones[0]) : '',
+    departamento: u.department ?? '',
+  }
+}
+
 /** Escopo pedido so na hora de enviar e-mail (consentimento incremental). */
 export const ESCOPOS_EMAIL = ['Mail.Send']
 
