@@ -491,7 +491,9 @@ export async function lerPerfilAssinatura(id: string): Promise<PerfilAssinatura>
   return {
     nome: u.displayName ?? '',
     cargo: u.jobTitle ?? '',
-    email: u.mail ?? u.userPrincipalName ?? '',
+    // UPN primeiro: e o endereco @nefroclinicas.com.br que a pessoa usa; `mail` pode vir
+    // como @...onmicrosoft.com em conta sem licenca.
+    email: u.userPrincipalName ?? u.mail ?? '',
     celular: u.mobilePhone ?? '',
     telefone: Array.isArray(u.businessPhones) && u.businessPhones.length > 0 ? String(u.businessPhones[0]) : '',
     departamento: u.department ?? '',
