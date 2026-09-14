@@ -4,6 +4,7 @@ import {
   IconeConfiguracoes,
   IconeEconomia,
   IconeLicencas,
+  IconeOrganograma,
   IconeRelatorios,
   IconeUsuarios,
   IconeVisaoGeral,
@@ -15,6 +16,7 @@ import estilos from './Layout.module.css'
 const PAINEL = [
   { para: '/visao-geral', rotulo: 'Visão geral', Icone: IconeVisaoGeral },
   { para: '/usuarios', rotulo: 'Usuários', Icone: IconeUsuarios },
+  { para: '/organograma', rotulo: 'Organograma', Icone: IconeOrganograma },
   { para: '/licencas', rotulo: 'Licenças', Icone: IconeLicencas },
   { para: '/economia', rotulo: 'Economia', Icone: IconeEconomia },
 ]

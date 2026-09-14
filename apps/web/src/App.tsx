@@ -6,6 +6,7 @@ import { Economia } from './features/economia/Economia'
 import { Licencas } from './features/licencas/Licencas'
 import { Login } from './features/login/Login'
 import { SessaoProvider } from './features/login/sessao'
+import { Organograma } from './features/organograma/Organograma'
 import { Relatorios } from './features/relatorios/Relatorios'
 import { NovaConta } from './features/usuarios/NovaConta'
 import { Usuarios } from './features/usuarios/Usuarios'
@@ -24,6 +25,7 @@ export function App() {
               <Route path="/visao-geral" element={<VisaoGeral />} />
               <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/usuarios/nova" element={<NovaConta />} />
+              <Route path="/organograma" element={<Organograma />} />
               <Route path="/licencas" element={<Licencas />} />
               <Route path="/economia" element={<Economia />} />
               <Route path="/relatorios" element={<Relatorios />} />
