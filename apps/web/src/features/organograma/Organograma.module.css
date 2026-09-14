@@ -1,0 +1,435 @@
+/* ---------- tela vazia (antes de importar a planilha) ---------- */
+.vazio {
+  max-width: 620px;
+  margin: 40px auto;
+  text-align: center;
+  padding: 44px 36px;
+  border-style: dashed;
+  border-width: 1.5px;
+  transition: 0.15s;
+}
+
+.vazio.arrastando {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.vazioIcone {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.vazioIcone svg {
+  width: 26px;
+  height: 26px;
+}
+
+.vazio h2 {
+  font-family: var(--display);
+  font-size: 19px;
+  margin: 0 0 8px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.vazio p {
+  color: var(--text-2);
+  font-size: 13.5px;
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.vazio small {
+  display: block;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* ---------- barra de ferramentas ---------- */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.search input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 12px 9px 34px;
+  font-size: 13px;
+}
+
+.search input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.search svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  stroke: var(--muted);
+  fill: none;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.chip.on {
+  background: var(--accent-soft);
+  border-color: rgba(232, 65, 42, 0.4);
+  color: var(--accent);
+}
+
+.acoes {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.acoes :global(.btn) {
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+/* ---------- duas colunas: gestores | equipe ---------- */
+.grade {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+.listaCard,
+.equipeCard {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.listaCabecalho {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.listaCabecalho h3 {
+  font-family: var(--display);
+  font-size: 13.5px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.listaCabecalho span {
+  margin-left: auto;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+/* A lista rola sozinha para a tabela da direita não fugir da tela. */
+.lista {
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .lista {
+    max-height: 380px;
+  }
+}
+
+.gestor {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.12s;
+}
+
+.gestor:last-child {
+  border-bottom: 0;
+}
+
+.gestor:hover {
+  background: var(--surface-2);
+}
+
+.gestor.ativo {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.av {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--text-2);
+  flex: 0 0 auto;
+}
+
+.gestor.ativo .av {
+  background: var(--accent);
+  color: #fff;
+}
+
+.gestorTexto {
+  min-width: 0;
+  flex: 1;
+}
+
+.gestorTexto b {
+  display: block;
+  font-weight: 500;
+  font-size: 13.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gestorTexto span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contagem {
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+.contagem b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.contagem span {
+  display: block;
+  font-size: 10.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.semGestor .av {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.nada {
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ---------- painel da equipe ---------- */
+.resumo {
+  padding: 18px;
+}
+
+.resumo p {
+  margin: 16px 2px 0;
+  font-size: 13.2px;
+  line-height: 1.6;
+}
+
+.equipeCabecalho {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-wrap: wrap;
+}
+
+.avGrande {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.titulo {
+  min-width: 0;
+  flex: 1;
+}
+
+.titulo h2 {
+  font-family: var(--display);
+  font-size: 17px;
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.detalhes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.detalhes > span:not([class]) + span:not([class])::before {
+  content: '·';
+  margin-right: 8px;
+  color: var(--line-strong);
+}
+
+.email {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.cadeia {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+  font-size: 12.5px;
+}
+
+.link {
+  color: var(--accent);
+  font-size: 12.5px;
+  padding: 0;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.seta {
+  color: var(--line-strong);
+  margin: 0 6px;
+}
+
+.equipeAcoes {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.equipeAcoes :global(.btn) {
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+.seg {
+  display: flex;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg button {
+  padding: 6px 11px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.seg button.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+/* A tabela tem mais colunas do que cabe em telas estreitas: rola só ela. */
+.rolagem {
+  overflow-x: auto;
+}
+
+.rolagem table {
+  min-width: 820px;
+}
+
+.linhaGestor {
+  cursor: pointer;
+}
+
+.linhaGestor:hover {
+  background: var(--surface-2);
+}
+
+.colEquipe {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.regional {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rodape {
+  padding: 14px 18px;
+  border-top: 1px solid var(--line-soft);
+  text-align: center;
+}
