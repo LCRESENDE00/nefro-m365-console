@@ -114,6 +114,16 @@ export const IconeExportar = () => (
   </svg>
 )
 
+export const IconeOrganograma = () => (
+  <svg {...base}>
+    <rect x="9" y="2.5" width="6" height="4.5" rx="1.2" />
+    <rect x="2.5" y="17" width="6" height="4.5" rx="1.2" />
+    <rect x="15.5" y="17" width="6" height="4.5" rx="1.2" />
+    <path d="M12 7v4.5" />
+    <path d="M5.5 17v-3a1.5 1.5 0 0 1 1.5-1.5h10a1.5 1.5 0 0 1 1.5 1.5v3" />
+  </svg>
+)
+
 export const IconeBusca = () => (
   <svg {...base} strokeWidth={1.8}>
     <circle cx="11" cy="11" r="7" />
