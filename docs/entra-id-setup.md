@@ -57,22 +57,24 @@ Encontrado em: Registros de aplicativo > [seu app] > Visao geral >
 ID do tenant (locatario) do Azure AD.
 Encontrado em: Microsoft Entra ID > Visao geral > "ID do locatario".
 
-Essas duas nao sao segredos (ficam visiveis no bundle publico do front),
+Essas duas nao sao segredos (ficam visiveis no bundle do front),
 mas ainda assim vem de variavel de ambiente porque sao especificas do
 tenant/app registration de cada instalacao.
 
-No GitHub Pages, o build roda pelo GitHub Actions (nao tem `.env` local),
-entao essas variaveis precisam ser cadastradas em Settings > Secrets and
-variables > Actions > aba "Variables" do repositorio, com esses mesmos
-nomes. O workflow `.github/workflows/pages.yml` ja esta configurado para
-ler dali e injetar no build.
+O NefroControl roda so localmente (nao ha mais GitHub Pages nem Azure), entao
+essas variaveis ficam no arquivo `apps/web/.env`, copiado de
+`apps/web/.env.example` e fora do git. Ele vale para `npm run local` e
+`npm run dev`. As mesmas variaveis continuam em Settings > Secrets and
+variables > Actions > aba "Variables" do repositorio apenas porque o job de
+envio automatico (`.github/workflows/envio-automatico.yml`) usa esses valores.
 
-Tambem e necessario, no app registration, adicionar uma plataforma "SPA"
+Tambem e necessario, no app registration, ter a plataforma "SPA"
 (Autenticacao > Adicionar uma plataforma > Aplicativo de pagina unica) com
-o URI de redirecionamento da demo, ex:
-`https://lcresende00.github.io/nefro-m365-console/login`, e conceder
+o URI de redirecionamento local `http://localhost:5173/login`, e conceder
 consentimento do administrador para a permissao `Organization.Read.All`
-do Microsoft Graph (Permissoes de API).
+do Microsoft Graph (Permissoes de API). Se ainda houver URIs de quando o
+console era publicado (`https://lcresende00.github.io/nefro-m365-console/login`
+ou `*.azurestaticapps.net/login`), elas podem ser removidas.
 
 
 ## Resumo

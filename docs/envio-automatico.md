@@ -12,7 +12,8 @@ rodando `apps/web/scripts/envio-automatico.ts`. O script pega um token de aplica
 Entra ID, lê a Microsoft Graph, monta o e-mail com as mesmas funções da tela Relatórios
 (`apps/web/src/lib/resumoEmail.ts`) e envia com `POST /users/{remetente}/sendMail`.
 
-A tela **Relatórios** do site mostra a configuração, o resultado do último disparo e tem o
+A tela **Relatórios** do console (modo `npm run local`) mostra a configuração, o resultado do
+último disparo (com o repositório privado, só o link para as execuções no GitHub) e tem o
 botão **Enviar agora**, que manda o mesmo e-mail na hora pela caixa de quem está logado
 (escopo `Mail.Send`, pedido por consentimento na primeira vez).
 
@@ -35,12 +36,12 @@ botão **Enviar agora**, que manda o mesmo e-mail na hora pela caixa de quem est
 - `resumoMensal` / `alertaContaInativa`: `false` desliga aquele envio (o job roda e sai sem enviar).
 - `precos` (opcional): `{ "O365_BUSINESS_ESSENTIALS": 31.15 }` para mudar o valor unitário; sem ele valem os de `apps/web/src/lib/precosPadrao.ts`.
 
-Mudou o arquivo na `main`, valeu para o próximo disparo — o site publicado também passa a mostrar o novo valor.
+Mudou o arquivo na `main`, valeu para o próximo disparo — o console local mostra o novo valor depois de `git pull` e `npm run local`.
 Para mudar os **horários**, edite os `cron` do workflow (em UTC; Brasília = UTC-3).
 
 ## O que precisa ser feito uma vez no Entra ID
 
-O app registration é o mesmo do site (o `VITE_MSAL_CLIENT_ID` cadastrado nas Variables do
+O app registration é o mesmo do console (o `VITE_MSAL_CLIENT_ID` cadastrado nas Variables do
 repositório). Hoje ele só tem permissões **delegadas** (valem com alguém logado). O job roda
 sozinho, então precisa de permissões **de aplicativo** e de uma credencial.
 

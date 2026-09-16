@@ -6,7 +6,7 @@ import './styles/global.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {/* No GitHub Pages o site vive sob /nefro-m365-console/. */}
+    {/* Base sempre "/": o console roda só em localhost. */}
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <App />
     </BrowserRouter>

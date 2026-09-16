@@ -1,7 +1,7 @@
 /**
  * Configuração do envio automático e situação do último disparo.
  *
- * A configuração mora em public/envio-automatico.json (publicada junto com o site) e é a
+ * A configuração mora em public/envio-automatico.json (servida junto com o console) e é a
  * mesma que o job agendado lê no GitHub Actions — por isso a tela mostra exatamente o que
  * vai acontecer, e mudar destinatário ou desligar um envio é editar esse arquivo na main.
  */
@@ -64,7 +64,7 @@ export function normalizarConfigEnvio(bruto: unknown): ConfigEnvio {
   }
 }
 
-/** Lê o envio-automatico.json publicado junto com o site. */
+/** Lê o envio-automatico.json servido junto com o console. */
 export async function lerConfigEnvio(): Promise<ConfigEnvio> {
   const resposta = await fetch(import.meta.env.BASE_URL + 'envio-automatico.json', { cache: 'no-cache' })
   if (!resposta.ok) throw new Error('Não foi possível ler envio-automatico.json (' + resposta.status + ')')
@@ -91,13 +91,22 @@ const SITUACOES: Record<string, string> = {
   neutral: 'concluído',
 }
 
+/** A API do GitHub sem token responde 404 para repositório privado. */
+export class RepositorioPrivado extends Error {
+  constructor() {
+    super('Repositório privado: a situação do último disparo só aparece no GitHub')
+  }
+}
+
 /**
- * Último disparo do job no GitHub Actions. O repositório é público, então a API do
- * GitHub responde sem token (limite de 60 consultas por hora por IP — de sobra aqui).
+ * Último disparo do job no GitHub Actions, pela API do GitHub sem token (limite de 60
+ * consultas por hora por IP). Com o repositório privado ela responde 404: aí lança
+ * RepositorioPrivado e a tela mostra só o link para as execuções no GitHub.
  */
 export async function lerUltimoDisparo(config: ConfigEnvio): Promise<UltimoDisparo | null> {
   const url = `https://api.github.com/repos/${config.repositorio}/actions/workflows/${config.workflow}/runs?per_page=1&exclude_pull_requests=true`
   const resposta = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } })
+  if (resposta.status === 404) throw new RepositorioPrivado()
   if (!resposta.ok) throw new Error('GitHub respondeu ' + resposta.status)
   const dados = await resposta.json()
   const execucao = dados.workflow_runs?.[0]
