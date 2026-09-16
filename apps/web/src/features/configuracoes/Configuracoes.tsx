@@ -190,7 +190,7 @@ export function Configuracoes() {
         </div>
         <div className="dl">
           <span>Base</span>
-          <b>{SEM_BACKEND ? 'React · TypeScript (demo sem backend)' : 'React · TypeScript · Express · Prisma · SQLite'}</b>
+          <b>{SEM_BACKEND ? 'React · TypeScript (local, sem API)' : 'React · TypeScript · Express · Prisma · SQLite'}</b>
         </div>
         <div className="dl">
           <span>Origem</span>

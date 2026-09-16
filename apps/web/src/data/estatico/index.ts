@@ -1,6 +1,6 @@
 /**
- * Implementacao dos repositorios sem backend, para a demo publicada no
- * GitHub Pages. Le o mesmo seed e chama as mesmas funcoes de calculo que a API
+ * Implementacao dos repositorios sem backend, usada no modo local
+ * `npm run local`. Le o mesmo seed e chama as mesmas funcoes de calculo que a API
  * usa, entao os numeros batem com os da versao completa.
  */
 import {

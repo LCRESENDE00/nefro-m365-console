@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "build:pages": "tsc --noEmit && vite build --mode pages",
+    "build:local": "tsc --noEmit && vite build --mode estatico",
+    "local": "npm run build:local && vite preview",
     "preview": "vite preview"
   },
   "dependencies": {

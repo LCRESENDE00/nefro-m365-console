@@ -7,6 +7,7 @@ import {
   lerUltimoDisparo,
   linkEditarConfig,
   linkWorkflow,
+  RepositorioPrivado,
   type ConfigEnvio,
   type UltimoDisparo,
 } from '../../lib/envioAutomatico'
@@ -19,7 +20,7 @@ import estilos from './Relatorios.module.css'
 type Enviando = 'resumo' | 'alerta' | null
 
 /**
- * Card "Envio automático" do site publicado (sem backend).
+ * Card "Envio automático" do modo local sem API (`npm run local`).
  *
  * Duas coisas acontecem aqui:
  *  - o disparo agendado roda no GitHub Actions do repositório (todo dia 1º e toda segunda),
@@ -34,7 +35,7 @@ export function EnvioAutomatico() {
   const { precos } = usePrecos()
   const [config, setConfig] = useState<ConfigEnvio | null>(null)
   const [erroConfig, setErroConfig] = useState<string | null>(null)
-  const [ultimo, setUltimo] = useState<UltimoDisparo | null | 'erro' | 'carregando'>('carregando')
+  const [ultimo, setUltimo] = useState<UltimoDisparo | null | 'erro' | 'privado' | 'carregando'>('carregando')
   const [destinatarios, setDestinatarios] = useState('')
   const [enviando, setEnviando] = useState<Enviando>(null)
 
@@ -47,7 +48,7 @@ export function EnvioAutomatico() {
         setDestinatarios(lida.destinatarios.join(', '))
         return lerUltimoDisparo(lida)
           .then((disparo) => ativo && setUltimo(disparo))
-          .catch(() => ativo && setUltimo('erro'))
+          .catch((falha) => ativo && setUltimo(falha instanceof RepositorioPrivado ? 'privado' : 'erro'))
       })
       .catch((falha: Error) => ativo && setErroConfig(falha.message))
     return () => {
@@ -139,8 +140,16 @@ export function EnvioAutomatico() {
               <span>
                 {ultimo === 'carregando' && 'consultando o GitHub…'}
                 {ultimo === 'erro' && 'não foi possível consultar o GitHub agora'}
+                {ultimo === 'privado' && (
+                  <>
+                    repositório privado —{' '}
+                    <a href={linkWorkflow(config)} target="_blank" rel="noreferrer">
+                      veja as execuções no GitHub
+                    </a>
+                  </>
+                )}
                 {ultimo === null && 'ainda não rodou — o primeiro disparo é no próximo dia 1º (ou pode ser feito à mão no GitHub)'}
-                {ultimo && ultimo !== 'carregando' && ultimo !== 'erro' && (
+                {ultimo && ultimo !== 'carregando' && ultimo !== 'erro' && ultimo !== 'privado' && (
                   <>
                     {dataHora(ultimo.quando)} · {ultimo.situacao}
                     {ultimo.origem === 'workflow_dispatch' ? ' (disparado à mão)' : ''} ·{' '}
@@ -151,7 +160,7 @@ export function EnvioAutomatico() {
                 )}
               </span>
             </div>
-            {ultimo && ultimo !== 'carregando' && ultimo !== 'erro' && (
+            {ultimo && ultimo !== 'carregando' && ultimo !== 'erro' && ultimo !== 'privado' && (
               <span className={`badge ${ultimo.sucesso === null ? 'b-warn' : ultimo.sucesso ? 'b-ok' : 'b-bad'}`}>
                 {ultimo.sucesso === null ? 'Rodando' : ultimo.sucesso ? 'OK' : 'Falhou'}
               </span>

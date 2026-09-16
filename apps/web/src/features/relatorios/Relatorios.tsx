@@ -77,7 +77,7 @@ export function Relatorios() {
       </div>
 
       {SEM_BACKEND ? (
-        // Site publicado: o disparo real roda no GitHub Actions e o "Enviar agora" usa a Graph.
+        // Modo local sem API: o disparo agendado roda no GitHub Actions e o "Enviar agora" usa a Graph.
         <EnvioAutomatico />
       ) : (
         <div className="card" style={{ marginTop: 16 }}>

@@ -4,7 +4,7 @@ Painel de **licenças Microsoft 365** para TI interna: mostra quem não acessa h
 licença está sendo paga sem uso e **quanto isso custa por mês**.
 
 **⬇ Baixar para Windows:** [versão portátil](https://github.com/LCRESENDE00/nefro-m365-console/releases/latest) (baixa e abre, sem instalar) ou [instalador](https://github.com/LCRESENDE00/nefro-m365-console/releases/latest)
-**▶ Demo no navegador: https://lcresende00.github.io/nefro-m365-console/**
+**🔒 Uso interno e só local:** repositório privado, nada publicado na internet — o console roda na máquina de quem usa, em `localhost` (ver [Só local](#só-local)).
 
 Nasceu de um protótipo em HTML de arquivo único. Aqui ele virou aplicação de verdade:
 React + TypeScript no front, API Express com Prisma e banco SQLite atrás.
@@ -54,19 +54,32 @@ npm run desktop:dist   # gera os .exe em dist-desktop/
 
 ## Como rodar
 
-Requisitos: **Node 22+** e npm 10+.
+Requisitos: **Node 22+** e npm 10+. Tudo roda só na sua máquina: nada é publicado e os servidores
+escutam apenas em `localhost`.
 
 ```bash
-git clone https://github.com/LCRESENDE00/nefro-m365-console.git
+git clone https://github.com/LCRESENDE00/nefro-m365-console.git   # repositório privado: precisa estar logado
 cd nefro-m365-console
 
+cp apps/web/.env.example apps/web/.env   # no Windows: copy apps\web\.env.example apps\web\.env
+                                         # e preencha VITE_MSAL_CLIENT_ID e VITE_MSAL_TENANT_ID
+
+npm install
+npm run local    # compila e abre o console em http://localhost:5173
+```
+
+Abra <http://localhost:5173> e entre com a conta Microsoft de administrador do tenant. É a mesma versão
+que antes ficava no GitHub Pages, agora só no seu computador: sem API nem banco, com os dados lidos da
+Microsoft Graph direto no navegador e as preferências no `localStorage`.
+
+### Com a API e o banco (desenvolvimento)
+
+```bash
 cp apps/api/.env.example apps/api/.env   # no Windows: copy apps\api\.env.example apps\api\.env
 
 npm run setup    # instala, cria o banco SQLite e popula com o tenant de demonstração
-npm run dev      # API em :3333 e front em :5173
+npm run dev      # API em 127.0.0.1:3333 e front em localhost:5173
 ```
-
-Abra <http://localhost:5173> e entre por **"Entrar em modo demo"**.
 
 Na primeira instalação o npm pode pedir aprovação dos scripts do Prisma e do esbuild
 (`npm approve-scripts --allow-scripts-pending`); as aprovações já vêm registradas em
@@ -80,36 +93,34 @@ Na primeira instalação o npm pode pedir aprovação dos scripts do Prisma e do
 | `npm run db:seed` | Recria os dados de demonstração (apaga o que estiver lá) |
 | `npm run db:studio` | Abre o Prisma Studio para inspecionar as tabelas |
 | `npm run build` | Typecheck + build do pacote compartilhado, da API e do front |
-| `npm run build:pages` | Build da demo estática (o mesmo que o GitHub Actions publica) |
+| `npm run local` | Build sem API e servidor local em `localhost:5173` |
+| `npm run build:local` | Só o build sem API (em `apps/web/dist`), sem abrir o servidor |
 
 ---
 
-## Publicação
+## Só local
 
-O push na `main` dispara [`.github/workflows/pages.yml`](.github/workflows/pages.yml), que publica a
-demo em <https://lcresende00.github.io/nefro-m365-console/>.
+O NefroControl não é publicado em lugar nenhum: o repositório é privado, não existe mais workflow de
+GitHub Pages nem de Azure Static Web Apps, e cada pessoa roda o console na própria máquina.
 
-Essa versão roda **inteira no navegador**: o build usa `VITE_SEM_BACKEND=true`, o que troca a
-implementação HTTP dos repositórios pela de `src/data/estatico/`, que lê o mesmo seed e chama as
-mesmas funções de cálculo. Os números são idênticos aos da versão com API.
+- `npm run local` e `npm run dev` servem o front só em `localhost:5173`. A porta é fixa: se estiver
+  ocupada, o comando para em vez de trocar de porta, porque o login da Microsoft volta exatamente para
+  `http://localhost:5173/login`.
+- A API (no `npm run dev` e dentro do app de desktop) escuta só em `127.0.0.1` — outras máquinas da
+  rede não alcançam.
+- No `npm run local` o build usa `VITE_SEM_BACKEND=true` (arquivo `apps/web/.env.estatico`), que troca
+  a implementação HTTP dos repositórios pela de `src/data/estatico/`: mesmo seed, mesmas funções de
+  cálculo, números idênticos aos da versão com API. O que você altera (preferências, marcações,
+  histórico de exportações) fica no `localStorage` do navegador.
 
-O que muda na demo:
+No app registration do Entra ID, a URI de redirecionamento SPA é `http://localhost:5173/login`; as de
+quando o console era publicado (`https://lcresende00.github.io/nefro-m365-console/login`) podem ser
+removidas — ver [docs/entra-id-setup.md](docs/entra-id-setup.md).
 
-- não há servidor nem banco — o que você altera (preferências, marcações, histórico de exportações)
-  fica no `localStorage` do seu navegador e não é compartilhado com ninguém;
-- os relatórios continuam gerando CSV de verdade, montado no próprio navegador;
-- o login não autentica nada: qualquer valor nos campos entra.
-
-Para rodar a versão completa, com API e banco, siga [Como rodar](#como-rodar) acima.
-
-### Fora do GitHub Pages (Azure Static Web Apps)
-
-O mesmo build estático pode ser servido do Azure, com endereço `*.azurestaticapps.net` ou um
-domínio da Nefroclínicas. O workflow
-[`.github/workflows/azure-static-web-apps.yml`](.github/workflows/azure-static-web-apps.yml)
-publica a cada push na `main` assim que o secret `AZURE_STATIC_WEB_APPS_API_TOKEN` existir no
-repositório; até lá ele é pulado e o Pages segue sozinho. Passo a passo (recurso no Azure, token,
-URI de redirecionamento no Entra, domínio próprio): [docs/azure-static-web-apps.md](docs/azure-static-web-apps.md).
+A única peça que ainda roda fora da sua máquina é o **envio automático de relatórios** por e-mail,
+agendado no GitHub Actions ([docs/envio-automatico.md](docs/envio-automatico.md)). Para parar, desabilite
+o workflow "Envio automático de relatórios" na aba Actions ou ponha `resumoMensal` e
+`alertaContaInativa` como `false` em `apps/web/public/envio-automatico.json`.
 
 ---
 
@@ -134,7 +145,7 @@ apps/
    └─ src/
       ├─ data/                 interfaces dos repositórios + duas implementações
       │  ├─ http/              fala com a API Express
-      │  └─ estatico/          lê o seed no navegador (demo do Pages)
+      │  └─ estatico/          lê o seed no navegador (modo local sem API)
       ├─ components/           gráficos SVG, drawer, toast, switches
       ├─ layout/               sidebar, topbar, casca da aplicação
       └─ features/             uma pasta por tela
@@ -145,7 +156,7 @@ Três decisões que sustentam o resto:
 **1. Toda leitura passa por interfaces em `apps/web/src/data/`.** Nenhuma tela chama `fetch` nem
 conhece a URL da API — elas dependem de `ContaRepository`, `LicencaRepository`, `RelatorioRepository`
 e afins. É isso que permite a mesma interface rodar contra a API em desenvolvimento e **sem backend
-nenhum** na demo do GitHub Pages: a escolha acontece em `data/index.ts` e nenhum componente muda.
+nenhum** no `npm run local`: a escolha acontece em `data/index.ts` e nenhum componente muda.
 
 **2. A classificação da conta vive só em `@nefro/dominio`.** O front recebe o status pronto
 (`ativo` / `ocioso` / `inativo` / `nunca`), então mudar um limiar não exige tocar em tela nenhuma.
@@ -153,7 +164,7 @@ Os limiares são editáveis na interface: o seletor `30d/60d/90d` no topo e as p
 Configurações alteram de fato os números de todas as telas.
 
 **3. Os cálculos são funções puras no pacote compartilhado.** A API chama `calcularVisaoGeral()`
-com o que veio do banco; a demo estática chama a mesma função com o que veio do seed. Não existem
+com o que veio do banco; o modo local sem API chama a mesma função com o que veio do seed. Não existem
 duas implementações para divergirem — a equivalência foi verificada comparando as respostas dos dois
 caminhos campo a campo.
 

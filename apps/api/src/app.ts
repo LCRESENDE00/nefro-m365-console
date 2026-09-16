@@ -21,6 +21,9 @@ export type OpcoesApp = {
 
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5173'
 
+/** O NefroControl roda so localmente: a API nunca fica acessivel para outras maquinas da rede. */
+export const HOST_LOCAL = '127.0.0.1'
+
 /** Monta a aplicacao Express. Quem chama decide em que porta ela escuta. */
 export function criarApp({ pastaEstatica }: OpcoesApp = {}) {
     const app = express()
@@ -61,12 +64,13 @@ export function criarApp({ pastaEstatica }: OpcoesApp = {}) {
 /**
  * Sobe a API e devolve a porta real. `porta: 0` deixa o sistema escolher uma
  * livre, que e o que o app de desktop usa para nao brigar com outros programas.
+ * Escuta so em 127.0.0.1 (HOST_LOCAL), nunca em todas as interfaces.
  */
 export async function iniciarApi(porta: number, opcoes: OpcoesApp = {}) {
     await semearSeVazio(prisma)
 
   const app = criarApp(opcoes)
-    const servidor = app.listen(porta)
+    const servidor = app.listen(porta, HOST_LOCAL)
 
   await new Promise<void>((resolve, reject) => {
         servidor.once('listening', resolve)

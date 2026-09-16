@@ -2,7 +2,7 @@
  * Tenant de demonstracao.
  *
  * Fonte unica dos dados ficticios: o seed do Prisma grava isto no banco, e a
- * demo estatica publicada no GitHub Pages le exatamente o mesmo conteudo sem
+ * modo local sem API (`npm run local`) le exatamente o mesmo conteudo sem
  * backend nenhum. Nomes, cargos e o dominio `nefroclinicas.exemplo` sao
  * inventados e nao correspondem a pessoas ou contas reais.
  */

@@ -32,7 +32,8 @@ export type EntradaResumo = {
 
 export type EmailPronto = { assunto: string; html: string; anexos: AnexoEmail[] }
 
-const LINK_CONSOLE_PADRAO = 'https://lcresende00.github.io/nefro-m365-console/'
+/** O console roda só localmente (`npm run local`), então o link do rodapé abre o localhost. */
+const LINK_CONSOLE_PADRAO = 'http://localhost:5173/'
 const MAXIMO_CONTAS_NO_CORPO = 20
 
 const COR_MARCA = '#e8412a'
