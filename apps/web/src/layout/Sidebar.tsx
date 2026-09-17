@@ -30,7 +30,7 @@ const SAIDA = [
 const classe = ({ isActive }: { isActive: boolean }) => `${estilos.navItem} ${isActive ? estilos.on : ''}`
 
 export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null }) {
-  const { sair } = useSessao()
+  const { sair, sessao } = useSessao()
   const { conectado, conectando, nome } = useDadosReais()
 
   return (
@@ -70,7 +70,7 @@ export function Sidebar({ precisamRevisao }: { precisamRevisao: number | null })
           {conectado ? `Conectado como ${nome ?? 'Microsoft 365'}` : conectando ? 'Conectando…' : 'Aguardando conexão'}
         </div>
         <div className={`${estilos.row} mono`} style={{ fontSize: 10.5, opacity: 0.65 }}>
-          Dados reais via Microsoft Graph
+          {sessao?.modo === 'demo' ? 'Dados fictícios · modo demo' : 'Dados reais via Microsoft Graph'}
         </div>
         <button className={estilos.sair} onClick={sair}>
           Sair da sessão

@@ -16,6 +16,7 @@ import {
   type RegistroMfa,
   type UsuarioReal,
 } from './graph'
+import { ERRO_DEMO, ehSessaoDemo, estadoDemo } from './dadosDemo'
 
 // A classificacao por dias sem acesso mora em lib/status.ts (sem React), para o
 // script de envio automatico usar a mesma regra; aqui so re-exporta.
@@ -79,6 +80,27 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
 
   const conectar = useCallback(async () => {
     setEstado((s) => ({ ...s, conectando: true, erroConexao: null }))
+
+    // Modo demo (lib/dadosDemo.ts): nenhuma chamada a Graph, o estado vem dos dados ficticios.
+    if (ehSessaoDemo()) {
+      const demo = estadoDemo()
+      setEstado((s) => ({
+        ...s,
+        conectando: false,
+        conectado: true,
+        erroConexao: null,
+        nome: demo.nome,
+        licencas: demo.licencas,
+        usuarios: demo.usuarios,
+        erroUsuarios: null,
+        mfa: demo.mfa,
+        erroMfa: null,
+        armazenamento: demo.armazenamento,
+        erroArmazenamento: null,
+      }))
+      return
+    }
+
     try {
       const licencas = await lerLicencas()
       const conta = await lerContaConectada().catch(() => null)
@@ -111,6 +133,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const recarregarUsuarios = useCallback(async () => {
+    if (ehSessaoDemo()) return
     try {
       const usuarios = await lerUsuarios()
       setEstado((s) => ({ ...s, usuarios, erroUsuarios: null }))
@@ -125,6 +148,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
 
   const criarUsuario = useCallback(
     async (dados: NovoUsuario) => {
+      if (ehSessaoDemo()) throw new Error(ERRO_DEMO)
       const criado = await criarUsuarioGraph(dados)
       await recarregarUsuarios()
       return criado
@@ -133,6 +157,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
   )
 
   const redefinirSenha = useCallback(async (id: string) => {
+    if (ehSessaoDemo()) throw new Error(ERRO_DEMO)
     const senha = gerarSenhaTemporaria()
     await redefinirSenhaGraph(id, senha)
     return senha
@@ -140,6 +165,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
 
   const alternarSituacao = useCallback(
     async (id: string, habilitarPara: boolean) => {
+      if (ehSessaoDemo()) throw new Error(ERRO_DEMO)
       await definirHabilitada(id, habilitarPara)
       await recarregarUsuarios()
     },
@@ -148,6 +174,7 @@ export function DadosReaisProvider({ children }: { children: ReactNode }) {
 
   const removerLicencas = useCallback(
  async (id: string, skuIds: string[]) => {
+ if (ehSessaoDemo()) throw new Error(ERRO_DEMO)
  await removerTodasLicencasGraph(id, skuIds)
  await recarregarUsuarios()
  },
