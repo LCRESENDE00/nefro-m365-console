@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconeMicrosoft } from '../../components/icones'
+import { NOME_SESSAO_DEMO } from '../../lib/dadosDemo'
 import { entrarComMicrosoft } from '../../lib/graph'
 import { useSessao } from './sessao'
 import estilos from './Login.module.css'
@@ -10,6 +11,12 @@ export function Login() {
   const navegar = useNavigate()
   const [entrando, setEntrando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  /** Abre o console com os dados ficticios de lib/dadosDemo.ts, sem tocar no tenant. */
+  function acessarDemo() {
+    entrar({ tenantId: 'demo', clientId: 'demo', modo: 'demo', nome: NOME_SESSAO_DEMO })
+    navegar('/visao-geral')
+  }
 
   async function acessar() {
     setEntrando(true)
@@ -68,6 +75,19 @@ export function Login() {
         <p className="muted" style={{ fontSize: 11.5, marginTop: 16 }}>
           Abre o login oficial da Microsoft em um popup. Nenhuma senha é digitada aqui: a autenticação é feita
           inteira pela Microsoft, e só o token da sua sessão fica guardado neste navegador.
+        </p>
+
+        <div className={estilos.divisor}>
+          <span>ou</span>
+        </div>
+
+        <button className="btn btn-ghost btn-block" onClick={acessarDemo} disabled={entrando}>
+          Entrar no modo demo
+        </button>
+
+        <p className="muted" style={{ fontSize: 11.5, marginTop: 12 }}>
+          Console completo com dados fictícios, sem login e sem internet: nada é lido nem gravado no Microsoft
+          365. As ações que mexem no tenant ficam desativadas.
         </p>
 
         {erro && <p style={{ color: 'var(--rose)', marginTop: 12 }}>{erro}</p>}
