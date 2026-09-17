@@ -246,3 +246,18 @@
     padding-right: 16px;
   }
 }
+
+/* Selo do modo demo na barra do topo (dados ficticios, ver lib/dadosDemo.ts). */
+.demo {
+  align-self: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 4px 10px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}

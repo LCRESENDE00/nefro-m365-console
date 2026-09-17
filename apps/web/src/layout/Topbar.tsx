@@ -37,6 +37,12 @@ export function Topbar() {
       </div>
 
       <div className={estilos.right}>
+        {sessao?.modo === 'demo' ? (
+          <span className={estilos.demo} title="Dados fictícios: nada vem do tenant da clínica">
+            DEMO
+          </span>
+        ) : null}
+
         {mostrarJanela ? (
           <div className={estilos.seg} role="group" aria-label="A partir de quantos dias uma conta é inativa">
             {JANELAS.map((dias) => (
