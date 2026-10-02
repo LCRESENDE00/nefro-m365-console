@@ -236,6 +236,7 @@ export type PerfilUsuario = {
   empresa?: string
   escritorio?: string
   telefone?: string
+  fax?: string
   celular?: string
   endereco?: string
   cidade?: string
@@ -273,6 +274,7 @@ function corpoPerfil(perfil: PerfilUsuario): Record<string, unknown> {
     companyName: perfil.empresa?.trim(),
     officeLocation: perfil.escritorio?.trim(),
     businessPhones: perfil.telefone?.trim() ? [perfil.telefone.trim()] : undefined,
+    faxNumber: perfil.fax?.trim(),
     mobilePhone: perfil.celular?.trim(),
     streetAddress: perfil.endereco?.trim(),
     city: perfil.cidade?.trim(),
