@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Carregando, Erro } from '../../components/Estado'
 import { useToast } from '../../components/Toast'
 import { useSubtitulo } from '../../layout/pagina'
@@ -16,9 +16,7 @@ import {
   criarUsuario,
   definirGerente,
   gerarSenhaTemporaria,
-  gravarDadosFuncionais,
   lerGrupos,
-  type DadosFuncionais,
   type GrupoReal,
   type PerfilUsuario,
 } from '../../lib/graph'
@@ -65,24 +63,6 @@ const PAISES: Array<[string, string]> = [
 
 const nomePais = (codigo: string) => PAISES.find(([c]) => c === codigo)?.[1] ?? codigo
 
-/** Tipos de vínculo mais comuns; o campo aceita qualquer texto (vai para employeeType). */
-const VINCULOS = ['CLT', 'PJ', 'Estagiário', 'Terceirizado', 'Temporário', 'Residente', 'Sócio / diretoria']
-
-/** Formata o CNPJ enquanto digita: 00.000.000/0000-00. */
-function formatarCnpj(texto: string): string {
-  const digitos = texto.replace(/\D/g, '').slice(0, 14)
-  return digitos
-    .replace(/^(\d{2})(\d)/, '$1.$2')
-    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4')
-    .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d)/, '$1.$2.$3/$4-$5')
-}
-
-const dataBr = (iso: string) => {
-  const [ano, mes, dia] = iso.split('-')
-  return dia && mes && ano ? `${dia}/${mes}/${ano}` : iso
-}
-
 type TipoConta = 'interno' | 'convidado'
 
 type Formulario = {
@@ -113,14 +93,9 @@ type Formulario = {
   papeis: string[]
   cargo: string
   departamento: string
-  setor: string
-  cnpj: string
-  matricula: string
-  vinculo: string
-  dataAdmissao: string
-  empresa: string
   escritorio: string
   telefone: string
+  fax: string
   celular: string
   endereco: string
   cidade: string
@@ -155,20 +130,15 @@ const FORMULARIO_INICIAL: Formulario = {
   papeis: [],
   cargo: '',
   departamento: '',
-  setor: '',
-  cnpj: '',
-  matricula: '',
-  vinculo: '',
-  dataAdmissao: '',
-  empresa: 'Nefroclínicas',
   escritorio: '',
   telefone: '',
+  fax: '',
   celular: '',
   endereco: '',
   cidade: '',
   estado: '',
   cep: '',
-  pais: 'Brasil',
+  pais: '',
   gerenteId: '',
   grupos: [],
 }
@@ -369,19 +339,11 @@ export function NovaConta() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dominios])
 
-  /**
-   * Unidades e setores vêm do catálogo (Configurações > Unidades e setores), em lista fechada,
-   * para a sigla não sair diferente a cada cadastro. Siglas que já existem no Entra mas
-   * não estão no catálogo aparecem no fim, marcadas, para não sumirem da escolha.
-   */
-  const unidades = useMemo(() => {
-    const noCatalogo = new Set(catalogos.unidades.map((u) => u.sigla))
-    const foraDoCatalogo = [...new Set((usuarios ?? []).map((u) => u.departamento?.trim().toUpperCase() ?? '').filter(Boolean))]
-      .filter((sigla) => !noCatalogo.has(sigla))
-      .sort()
-    return { catalogo: catalogos.unidades, foraDoCatalogo }
+  /** Sugestões para o campo Departamento: siglas do catálogo + as que já existem no Entra. */
+  const sugestoesDepartamento = useMemo(() => {
+    const doEntra = (usuarios ?? []).map((u) => u.departamento?.trim().toUpperCase() ?? '').filter(Boolean)
+    return [...new Set([...catalogos.unidades.map((u) => u.sigla), ...doEntra])].sort()
   }, [catalogos.unidades, usuarios])
-  const setores = catalogos.setores
 
   const licencas = useMemo(
     () => [...dr.licencas].sort((a, b) => Number(b.livres > 0) - Number(a.livres > 0) || a.nome.localeCompare(b.nome, 'pt-BR')),
@@ -444,9 +406,9 @@ export function NovaConta() {
     sobrenome: form.tipo === 'interno' ? form.sobrenome : undefined,
     cargo: form.cargo,
     departamento: form.departamento,
-    empresa: form.empresa,
     escritorio: form.escritorio,
     telefone: form.telefone,
+    fax: form.fax,
     celular: form.celular,
     endereco: form.endereco,
     cidade: form.cidade,
@@ -454,23 +416,6 @@ export function NovaConta() {
     cep: form.cep,
     pais: form.pais,
   }
-
-  const dadosFuncionais: DadosFuncionais = {
-    setor: form.setor,
-    cnpj: form.cnpj,
-    matricula: form.matricula,
-    vinculo: form.vinculo,
-    dataAdmissao: form.dataAdmissao,
-  }
-  const resumoFuncional = [
-    form.setor && `setor ${form.setor}`,
-    form.cnpj && `CNPJ ${form.cnpj}`,
-    form.matricula && `matrícula ${form.matricula}`,
-    form.vinculo && `vínculo ${form.vinculo}`,
-    form.dataAdmissao && `admissão ${dataBr(form.dataAdmissao)}`,
-  ]
-    .filter(Boolean)
-    .join(' · ')
 
   const etapaValida = (qual: Etapa) => (qual === 0 ? basicoOk : qual === 1 ? licencasOk : true)
 
@@ -549,15 +494,6 @@ export function NovaConta() {
       setConclusao({ criada: false, nome: nomeFinal, upn, senha: null, linkConvite: null, passos, assinatura: null })
       setExecutando(false)
       return
-    }
-
-    if (resumoFuncional) {
-      try {
-        await comRepeticao(() => gravarDadosFuncionais(id, dadosFuncionais))
-        passos.push({ rotulo: 'Dados da Nefroclínicas gravados', estado: 'ok', detalhe: resumoFuncional })
-      } catch (falha) {
-        passos.push({ rotulo: 'Gravar dados da Nefroclínicas', estado: 'erro', detalhe: mensagemDe(falha, 'Falhou') })
-      }
     }
 
     if (form.modoLicenca === 'atribuir' && form.skuIds.length > 0) {
@@ -1126,115 +1062,47 @@ export function NovaConta() {
           </>
         )}
 
-        <div className={estilos.secao}>Dados da Nefroclínicas</div>
+        <div className={estilos.secao}>Informações do perfil</div>
         <div className={estilos.grid2}>
           <Campo rotulo="Cargo">
-            <input value={form.cargo} placeholder="Ex.: Enfermeira" onChange={(e) => mudar('cargo', e.target.value)} />
+            <input value={form.cargo} onChange={(e) => mudar('cargo', e.target.value)} />
           </Campo>
-          <Campo rotulo="Unidade" ajuda="A sigla vai para o campo department do Entra e alimenta os filtros de região.">
-            <select value={form.departamento} onChange={(e) => mudar('departamento', e.target.value)}>
-              <option value="">Selecione…</option>
-              {unidades.catalogo.map((unidade) => (
-                <option key={unidade.sigla} value={unidade.sigla}>
-                  {unidade.nome ? `${unidade.sigla} · ${unidade.nome}` : unidade.sigla}
-                  {unidade.regiao ? ` (${unidade.regiao})` : ''}
-                </option>
-              ))}
-              {unidades.foraDoCatalogo.length > 0 && (
-                <optgroup label="No Entra, mas fora do catálogo">
-                  {unidades.foraDoCatalogo.map((sigla) => (
-                    <option key={sigla} value={sigla}>
-                      {sigla}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </Campo>
-          <Campo rotulo="Setor" ajuda="Vai para o campo divisão (employeeOrgData.division) do Entra.">
-            <select value={form.setor} onChange={(e) => mudar('setor', e.target.value)}>
-              <option value="">Selecione…</option>
-              {setores.map((setor) => (
-                <option key={setor} value={setor}>
-                  {setor}
-                </option>
-              ))}
-            </select>
-          </Campo>
-          <Campo rotulo="CNPJ da unidade" ajuda="Vai para o centro de custo (employeeOrgData.costCenter).">
-            <input
-              inputMode="numeric"
-              value={form.cnpj}
-              placeholder="00.000.000/0000-00"
-              onChange={(e) => mudar('cnpj', formatarCnpj(e.target.value))}
-            />
-          </Campo>
-          <Campo rotulo="Matrícula" ajuda="Campo employeeId do Entra.">
-            <input value={form.matricula} placeholder="Ex.: 004512" onChange={(e) => mudar('matricula', e.target.value)} />
-          </Campo>
-          <Campo rotulo="Vínculo" ajuda="Campo employeeType do Entra.">
-            <input
-              list="vinculos-nefro"
-              value={form.vinculo}
-              placeholder="Ex.: CLT"
-              onChange={(e) => mudar('vinculo', e.target.value)}
-            />
-            <datalist id="vinculos-nefro">
-              {VINCULOS.map((vinculo) => (
-                <option key={vinculo} value={vinculo} />
+          <Campo rotulo="Departamento">
+            <input list="departamentos-entra" value={form.departamento} onChange={(e) => mudar('departamento', e.target.value)} />
+            <datalist id="departamentos-entra">
+              {sugestoesDepartamento.map((sigla) => (
+                <option key={sigla} value={sigla} />
               ))}
             </datalist>
           </Campo>
-          <Campo rotulo="Data de admissão" ajuda="Campo employeeHireDate do Entra.">
-            <input type="date" value={form.dataAdmissao} onChange={(e) => mudar('dataAdmissao', e.target.value)} />
-          </Campo>
-          <Campo rotulo="Empresa">
-            <input value={form.empresa} onChange={(e) => mudar('empresa', e.target.value)} />
-          </Campo>
-        </div>
-        <p className={estilos.ajuda} style={{ marginTop: -6 }}>
-          Faltou uma unidade ou um setor na lista? Cadastre em{' '}
-          <Link to="/configuracoes" style={{ color: 'var(--accent)' }}>
-            Configurações › Unidades e setores
-          </Link>
-          .
-        </p>
-
-        <div className={estilos.secao}>Contato</div>
-        <div className={estilos.grid2}>
-          <Campo rotulo="Escritório / local">
-            <input value={form.escritorio} placeholder="Ex.: Sede – Belo Horizonte" onChange={(e) => mudar('escritorio', e.target.value)} />
+          <Campo rotulo="Escritório">
+            <input value={form.escritorio} onChange={(e) => mudar('escritorio', e.target.value)} />
           </Campo>
           <Campo rotulo="Telefone comercial">
-            <input value={form.telefone} placeholder="(31) 0000-0000" onChange={(e) => mudar('telefone', e.target.value)} />
+            <input value={form.telefone} onChange={(e) => mudar('telefone', e.target.value)} />
+          </Campo>
+          <Campo rotulo="Número de fax">
+            <input value={form.fax} onChange={(e) => mudar('fax', e.target.value)} />
           </Campo>
           <Campo rotulo="Celular">
-            <input value={form.celular} placeholder="(31) 90000-0000" onChange={(e) => mudar('celular', e.target.value)} />
+            <input value={form.celular} onChange={(e) => mudar('celular', e.target.value)} />
+          </Campo>
+          <Campo rotulo="Endereço">
+            <input value={form.endereco} onChange={(e) => mudar('endereco', e.target.value)} />
+          </Campo>
+          <Campo rotulo="Cidade">
+            <input value={form.cidade} onChange={(e) => mudar('cidade', e.target.value)} />
+          </Campo>
+          <Campo rotulo="Estado ou província">
+            <input value={form.estado} onChange={(e) => mudar('estado', e.target.value)} />
+          </Campo>
+          <Campo rotulo="CEP">
+            <input value={form.cep} onChange={(e) => mudar('cep', e.target.value)} />
+          </Campo>
+          <Campo rotulo="País ou região">
+            <input value={form.pais} onChange={(e) => mudar('pais', e.target.value)} />
           </Campo>
         </div>
-
-        <details className={estilos.dobra}>
-          <summary>Endereço</summary>
-          <div>
-            <Campo rotulo="Endereço">
-              <input value={form.endereco} onChange={(e) => mudar('endereco', e.target.value)} />
-            </Campo>
-            <div className={estilos.grid3}>
-              <Campo rotulo="Cidade">
-                <input value={form.cidade} onChange={(e) => mudar('cidade', e.target.value)} />
-              </Campo>
-              <Campo rotulo="Estado">
-                <input value={form.estado} placeholder="MG" onChange={(e) => mudar('estado', e.target.value)} />
-              </Campo>
-              <Campo rotulo="CEP">
-                <input value={form.cep} onChange={(e) => mudar('cep', e.target.value)} />
-              </Campo>
-            </div>
-            <Campo rotulo="País">
-              <input value={form.pais} onChange={(e) => mudar('pais', e.target.value)} />
-            </Campo>
-          </div>
-        </details>
 
         <div className={estilos.secao}>Gestor imediato</div>
         <div className={estilos.grid2}>
@@ -1401,20 +1269,16 @@ export function NovaConta() {
               </b>
             </div>
             <div className={estilos.linha}>
-              <span>Cargo / unidade / setor</span>
-              <b>{[form.cargo, form.departamento && descreverUnidade(form.departamento), form.setor].filter(Boolean).join(' · ') || '—'}</b>
+              <span>Cargo / departamento</span>
+              <b>{[form.cargo, form.departamento && descreverUnidade(form.departamento)].filter(Boolean).join(' · ') || '—'}</b>
             </div>
             <div className={estilos.linha}>
-              <span>CNPJ / matrícula / vínculo</span>
-              <b>{[form.cnpj, form.matricula, form.vinculo].filter(Boolean).join(' · ') || '—'}</b>
+              <span>Escritório / telefones</span>
+              <b>{[form.escritorio, form.telefone, form.fax && `fax ${form.fax}`, form.celular].filter(Boolean).join(' · ') || '—'}</b>
             </div>
             <div className={estilos.linha}>
-              <span>Admissão</span>
-              <b>{form.dataAdmissao ? dataBr(form.dataAdmissao) : '—'}</b>
-            </div>
-            <div className={estilos.linha}>
-              <span>Contato</span>
-              <b>{[form.telefone, form.celular, form.escritorio].filter(Boolean).join(' · ') || '—'}</b>
+              <span>Endereço</span>
+              <b>{[form.endereco, form.cidade, form.estado, form.cep, form.pais].filter(Boolean).join(', ') || '—'}</b>
             </div>
             <div className={estilos.linha}>
               <span>Gestor imediato</span>
